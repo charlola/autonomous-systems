@@ -25,6 +25,8 @@ pip install -e .
 cd ../ml-agents
 pip install -e .
 
+# Falls man die Environment noch erstellen will (geht evtl. aber mit der env die ich bereitgestellt habe)
+
 1. Als Administrator in Unity Hub Bereich "Installs"  Unity Version "2018.4.35f1" installieren (dauert länger)
 1. In Unity Hub Bereich "Projects" "Add" drücken und den Ordner "ml-agents/Project" öffnen
 1. Projekt öffnen (dauert länger)
