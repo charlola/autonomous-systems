@@ -19,7 +19,8 @@ Activate the new env:
 activate ml-agents
 
 1. In ein Ordner für Repositories wechseln und ml-agents downloaden: (dauert länger)
-git clone --branch release_2 https://github.com/Unity-Technologies/ml-agents.git
+
+> git clone --branch release_2 https://github.com/Unity-Technologies/ml-agents.git
 
 1. In das ml-agents Repository wechseln
 > cd ml-agents
