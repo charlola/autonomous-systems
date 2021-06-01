@@ -1,5 +1,7 @@
+import torch
+
 from src.environment import worm
-from src.agent.a2c import A2CAgent
+from src.agent.a2c import A2CAgent, A2CNet
 from src.agent.ppo import PPOAgent
 
 def episode(env, agent, nr_episode, hyperparams):
@@ -26,7 +28,8 @@ if __name__ == "__main__":
     # define parameter
     params = {
         "episodes": 100,
-        "no_graphics": True
+        "no_graphics": True,
+        "nr_hidden_units": 64
     }
 
     # define hyperparameter
