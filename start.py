@@ -25,13 +25,15 @@ print(list(filter(lambda x: not x.startswith("_"), dir(spec))))
 decision_steps, terminal_steps = env.get_steps(behavior_name)
 print(decision_steps.obs)
 
-
 for episode in range(3):
   env.reset()
   decision_steps, terminal_steps = env.get_steps(behavior_name)
-  tracked_agent = -1 # -1 indicates not yet tracking
-  done = False # For the tracked_agent
-  episode_rewards = 0 # For the tracked_agent
+  # -1 indicates not yet tracking
+  tracked_agent = -1 
+  # For the tracked_agent
+  done = False 
+  # For the tracked_agent
+  episode_rewards = 0 
   while not done:
     # Track the first agent we see if not tracking
     # Note : len(decision_steps) = [number of agents that requested a decision]
@@ -45,9 +47,11 @@ for episode in range(3):
     env.step()
     # Get the new simulation results
     decision_steps, terminal_steps = env.get_steps(behavior_name)
-    if tracked_agent in decision_steps: # The agent requested a decision
+    # The agent requested a decision
+    if tracked_agent in decision_steps:
       episode_rewards += decision_steps[tracked_agent].reward
-    if tracked_agent in terminal_steps: # The agent terminated its episode
+      # The agent terminated its episode
+    if tracked_agent in terminal_steps:
       episode_rewards += terminal_steps[tracked_agent].reward
       done = True
   print(f"Total rewards for episode {episode} is {episode_rewards}")
