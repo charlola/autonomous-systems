@@ -38,7 +38,7 @@ if __name__ == "__main__":
     env = worm.load_env(no_graphics=params["no_graphics"])
 
     # create agent
-    agent = PPOAgent(hyperparams)
+    agent = A2CAgent(params)
 
     # define 
     results = [episode(env, agent, i, hyperparams) for i in range(params["episodes"])]
