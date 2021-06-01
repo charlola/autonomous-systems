@@ -37,6 +37,16 @@ activate ml-agents
 
 > pip install -e .
 
+1. Die Verbindung zwischen Gym und Unity 
+
+> cd ../gym-unity
+
+> pip install -e .
+
+1. Pytorch installieren (dauert länger)
+
+> conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+
 # Hier noch das Unity setup falls die Executatble nicht mehr läuft 
 
 1. Als Administrator in Unity Hub Bereich "Installs"  Unity Version "2018.4.35f1" installieren (dauert länger)
