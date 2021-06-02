@@ -29,19 +29,21 @@ if __name__ == "__main__":
     params = {
         "episodes": 100,
         "no_graphics": True,
-        "nr_hidden_units": 64
-    }
-
-    # define hyperparameter
-    hyperparams = {
-        "discount_factor": 0.99
     }
 
     # load environment
     env = worm.load_env(no_graphics=params["no_graphics"])
 
+    # define hyperparameter
+    hyperparams = {
+        "discount_factor": 0.99,
+        "nr_hidden_units": 64,
+        "nr_input_features": env.observation_space.shape[0],
+        "nr_actions": env.action_space.shape[0]
+    }
+
     # create agent
-    agent = A2CAgent(params)
+    agent = A2CAgent(hyperparams)
 
     # define 
     results = [episode(env, agent, i, hyperparams) for i in range(params["episodes"])]

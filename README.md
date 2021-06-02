@@ -47,6 +47,10 @@ activate ml-agents
 
 > conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
+1. Falls eine Grafikkarte der Nvidia RTX 3000 Reihe verwendet wird
+
+> pip install torch==1.7.0+cu110 torchvision==0.8.1+cu110 torchaudio===0.7.0 -f https://download.pytorch.org/whl/torch_stable.html
+
 # Hier noch das Unity setup falls die Executatble nicht mehr läuft 
 
 1. Als Administrator in Unity Hub Bereich "Installs"  Unity Version "2018.4.35f1" installieren (dauert länger)

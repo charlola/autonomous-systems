@@ -10,40 +10,25 @@ class A2CNet(nn.Module):
     def __init__(self, nr_input_features, nr_actions, nr_hidden_units):
         super(A2CNet, self).__init__()
 
-        self.fc_net_actor = nn.Sequential(
+        self.fc_1 = nn.Sequential(
             nn.Linear(nr_input_features, nr_hidden_units),
             nn.ReLU(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
             nn.ReLU()
         )
-
-        self.fc_net_critic = nn.Sequential(
-            nn.Linear(nr_input_features, nr_hidden_units),
-            nn.ReLU(),
-            nn.Linear(nr_hidden_units, nr_hidden_units),
-            nn.ReLU()
-        )
-
-        self.actor_head = nn.Linear(nr_hidden_units, nr_actions)
-        self.critic_head = nn.Linear(nr_hidden_units, 1)
+        self.fc_head = nn.Linear(nr_hidden_units, nr_actions)
 
     def forward(self, x):
-        # actor
-        x_act = self.fc_net_actor(x)
-        x_act = x_act.view(-1, x_act.size(0))
-
-        # critic
-        x_cri = self.fc_net_critic(x)
-        x_cri = x_cri.view(-1, x_cri.size(0))
-
-        return F.softmax(self.actor_head(x_act), dim=-1), self.critic_head(x_cri)
-
+        x = self.fc_1(x)
+        x = x.view(x.size(0), -1)
+        return self.fc_head(x)
 
 class A2CAgent(Agent):
 
     def policy(self, state):
-
-        return np.random.rand(1, 9)
+        # Todo moving back to cpu?
+        actions = self.actor_net(torch.tensor([state], device=self.device, dtype=torch.float32)).cpu().detach()
+        return actions[0]
 
     def update(self, state, action, reward, next_state, done):
         pass
@@ -51,3 +36,13 @@ class A2CAgent(Agent):
     def __init__(self, params):
         Agent.__init__(self, params)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.actor_net = A2CNet(
+            params["nr_input_features"],
+            params["nr_actions"],
+            params["nr_hidden_units"],
+        ).to(self.device)
+        self.critic_net = A2CNet(
+            params["nr_input_features"],
+            1,
+            params["nr_hidden_units"],
+        ).to(self.device)
