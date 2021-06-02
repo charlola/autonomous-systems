@@ -1,8 +1,9 @@
+import numpy.random
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
 from src.agent.agent import Agent
-import torch
+import torch as T
 import numpy as np
 
 class A2CNet(nn.Module):
@@ -10,32 +11,31 @@ class A2CNet(nn.Module):
     def __init__(self, nr_input_features, nr_actions, nr_hidden_units):
         super(A2CNet, self).__init__()
 
-        self.fc_1 = nn.Sequential(
+        self.fc_base = nn.Sequential(
             nn.Linear(nr_input_features, nr_hidden_units),
             nn.ReLU(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
             nn.ReLU()
         )
-        self.fc_head = nn.Linear(nr_hidden_units, nr_actions)
+        self.fc_mu = nn.Sequential(
+            nn.Linear(nr_hidden_units, nr_actions),
+            nn.Tanh(),
+        )
+        self.fc_sigma = nn.Sequential(
+            nn.Linear(nr_hidden_units, nr_actions),
+            nn.Softplus(),
+        )
 
     def forward(self, x):
-        x = self.fc_1(x)
-        x = x.view(x.size(0), -1)
-        return self.fc_head(x)
+        base_out = self.fc_base(x)
+        return self.fc_mu(base_out), self.fc_sigma(base_out)
 
 class A2CAgent(Agent):
-
-    def policy(self, state):
-        # Todo moving back to cpu?
-        actions = self.actor_net(torch.tensor([state], device=self.device, dtype=torch.float32)).cpu().detach()
-        return actions[0]
-
-    def update(self, state, action, reward, next_state, done):
-        pass
-
     def __init__(self, params):
         Agent.__init__(self, params)
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
+        self.gamma = params["gamma"]
+        self.alpha = params["alpha"],
         self.actor_net = A2CNet(
             params["nr_input_features"],
             params["nr_actions"],
@@ -46,3 +46,19 @@ class A2CAgent(Agent):
             1,
             params["nr_hidden_units"],
         ).to(self.device)
+
+    def policy(self, state):
+        # Todo moving back to cpu?
+        mu, sigma = self.actor_net(T.tensor([state], device=self.device, dtype=T.float32))
+        mu = mu.data.cpu().numpy()
+        sigma = sigma.data.cpu().numpy()
+        actions = numpy.random.normal(mu, sigma)
+        actions = numpy.clip(actions, -1, 1)
+        return  actions
+
+
+
+    def update(self, state, action, reward, next_state, done):
+        pass
+
+

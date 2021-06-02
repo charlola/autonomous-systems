@@ -28,7 +28,7 @@ if __name__ == "__main__":
     # define parameter
     params = {
         "episodes": 100,
-        "no_graphics": True,
+        "no_graphics": False,
     }
 
     # load environment
@@ -36,6 +36,8 @@ if __name__ == "__main__":
 
     # define hyperparameter
     hyperparams = {
+        "gamma": 0.99,
+        "alpha": 0.001,
         "discount_factor": 0.99,
         "nr_hidden_units": 64,
         "nr_input_features": env.observation_space.shape[0],
