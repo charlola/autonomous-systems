@@ -26,12 +26,16 @@ if __name__ == "__main__":
     # define parameter
     params = {
         "episodes": 100,
-        "no_graphics": True
+        "no_graphics": False
     }
 
     # define hyperparameter
     hyperparams = {
-        "discount_factor": 0.99
+        "discount_factor": 0.99,
+        "epsilon": 0.2,
+        "lambda": 0.95,
+        "alpha": 0.001,
+        "gamma": 0.99,
     }
 
     # load environment

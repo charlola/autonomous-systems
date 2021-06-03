@@ -1,6 +1,6 @@
 # autonomous-systems
 
-Setup uniform Python-Environment using conda:  
+Setup uniform Python-Environment using conda: (open Anaconda Prompt)  
 conda create --name ml-agents python=3.6
 
 Activate the new env:
