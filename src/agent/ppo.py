@@ -83,14 +83,19 @@ class PPOAgent(Agent):
         Agent.__init__(self, params)
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
         self.device = torch.device("cpu") 
-        self.alpha = params["alpha"]
+        self.alpha_actor = params["alpha_actor"]
+        self.alpha_critic = params["alpha_critic"]
         self.gamma = params["gamma"]
         self.epsilon = np.finfo(np.float32).eps.item()
         self.k = 5
 
-        self.actor_net  = ActorCritic(57, 9)
+        self.net = ActorCritic(57, 9)
 
-        self.optimizer = torch.optim.Adam(self.actor_net.parameters(), lr=self.alpha)
+        optimizer_params = [
+            {'params': self.net.actor.parameters(),  'lr': self.alpha_actor},
+            {'params': self.net.critic.parameters(), 'lr': self.alpha_critic}
+        ]
+        self.optimizer = torch.optim.Adam(optimizer_params)
 
         self.transitions = list()
 
@@ -104,7 +109,7 @@ class PPOAgent(Agent):
     """ 
     def predict_policy(self, states):
         states = torch.tensor(states, device=self.device, dtype=torch.float)
-        return self.actor_net.act(states)
+        return self.net.act(states)
 
     def update(self, state, action, reward, next_state, done):
 
@@ -137,4 +142,3 @@ class PPOAgent(Agent):
         loss.backward()
         self.optimizer.step()
     
-
