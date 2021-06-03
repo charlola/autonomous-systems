@@ -2,3 +2,5 @@
 .idea
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
+**/__pycache__
+src/agent/__pycache__/ppo.cpython-36.pyc
