@@ -23,22 +23,6 @@ def episode(env, agent, nr_episode, hyperparams):
 
 if __name__ == "__main__":
 
-    # define parameter
-    params = {
-        "episodes": 100,
-        "no_graphics": False
-    }
-
-    # define hyperparameter
-    hyperparams = {
-        "discount_factor": 0.99,
-        "epsilon": 0.2,
-        "lambda": 0.95,
-        "alpha_actor": 0.001,
-        "alpha_critic": 0.001,
-        "gamma": 0.99,
-    }
-
     # load environment
     env = worm.load_env(no_graphics=params["no_graphics"])
 

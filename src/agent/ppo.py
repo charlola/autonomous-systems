@@ -7,30 +7,30 @@ from torch.distributions import MultivariateNormal
 import random
 
 class ActorCritic(nn.Module):
-    def __init__(self, nr_input_features, action_dim, nr_hidden_units = 64, device="cpu", action_std_init=0.6):
+    def __init__(self, ac_config):
         super(ActorCritic, self).__init__()
 
-        self.action_dim = action_dim
-        self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
-        
+        self.action_dim = ac_config['action_dim']
+        self.action_var = torch.full((ac_config['action_dim']),ac_config['action_std_init'] * ac_config['action_std_init']).to(ac_config['device'])
+
         self.actor = nn.Sequential(
-            nn.Linear(nr_input_features, nr_hidden_units),
+            nn.Linear(ac_config['nr_input_features'], ac_config['nr_hidden_units']),
             nn.Tanh(), # evtl nn.Tanh() statt ReLU
-            nn.Linear(nr_hidden_units, nr_hidden_units),
+            nn.Linear(ac_config['nr_hidden_units'], ac_config['nr_hidden_units']),
             nn.Tanh(),# evtl nn.Tanh() statt ReLU,
-            nn.Linear(nr_hidden_units, action_dim),
+            nn.Linear(ac_config['nr_hidden_units'], ac_config['action_dim']),
             nn.Tanh(),# evtl nn.Tanh() statt ReLU,
         )
-        
+
         self.critic = nn.Sequential(
-            nn.Linear(nr_input_features, nr_hidden_units),
+            nn.Linear(ac_config['nr_input_features'], ac_config['nr_hidden_units']),
             nn.Tanh(), # evtl nn.Tanh() statt ReLU
-            nn.Linear(nr_hidden_units, nr_hidden_units),
+            nn.Linear(ac_config['nr_hidden_units'], ac_config['nr_hidden_units']),
             nn.Tanh(),# evtl nn.Tanh() statt ReLU,
-            nn.Linear(nr_hidden_units, 1),
+            nn.Linear(ac_config['nr_hidden_units'], 1),
             nn.Tanh(),# evtl nn.Tanh() statt ReLU,
         )
-        
+
 
     def forward(self, state):
         raise NotImplementedError
@@ -39,10 +39,10 @@ class ActorCritic(nn.Module):
         action_mean = self.actor(state)
         cov_mat = torch.diag(self.action_var).unsqueeze(dim=0)
         dist = MultivariateNormal(action_mean, cov_mat)
-        
+
         action = dist.sample()
         action_logprob = dist.log_prob(action)
-        
+
         return action.detach(), action_logprob.detach()
         x = self.fc_net(x)
         x = x.view(x.size(0), -1)
@@ -81,8 +81,8 @@ class PPOAgent(Agent):
 
     def __init__(self, params):
         Agent.__init__(self, params)
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-        self.device = torch.device("cpu") 
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
         self.alpha_actor = params["alpha_actor"]
         self.alpha_critic = params["alpha_critic"]
         self.gamma = params["gamma"]
@@ -106,7 +106,7 @@ class PPOAgent(Agent):
 
     """
      Predicts the action probabilities.
-    """ 
+    """
     def predict_policy(self, states):
         states = torch.tensor(states, device=self.device, dtype=torch.float)
         return self.net.act(states)
@@ -129,7 +129,7 @@ class PPOAgent(Agent):
                 x = (1+self.epsilon) * advantage
             else:
                 x = (1-self.epsilon) * advantage
-            
+
 
             m = Categorical(probs)
             policy_losses.append(-m.log_prob(action) * advantage)
@@ -141,4 +141,3 @@ class PPOAgent(Agent):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-    
