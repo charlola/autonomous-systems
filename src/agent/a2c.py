@@ -50,12 +50,12 @@ class A2CAgent(Agent):
         self.optimizer = T.optim.Adam(self.actor_net.parameters(), lr=params["alpha"])
 
     def policy(self, state):
-        # Todo moving back to cpu?
         mu, sigma = self.actor_net(T.tensor([state], device=self.device, dtype=T.float32))
-        actions = T.distributions.Normal(mu, sigma).sample()
-        actions = T.flatten(actions)
-        actions = numpy.clip(actions, -1, 1)
-        return actions
+        action = T.distributions.Normal(mu, sigma).sample()
+        action = T.flatten(action)
+        # Todo add lower bound upper bound for action space
+        action = numpy.clip(action, -1, 1)
+        return action
 
     def calculate_discounted_reward(self, rewards):
         discounted_returns = []
@@ -93,6 +93,7 @@ class A2CAgent(Agent):
             state_values, _ = self.critic_net(T.tensor(states, device=self.device, dtype=T.float32))
             next_state_values, _ = self.critic_net(T.tensor(next_states, device=self.device, dtype=T.float32))
 
+            # Calculate losses
             policy_losses = []
             value_losses = []
             for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values, next_state_values, normalized_returns, rewards):
