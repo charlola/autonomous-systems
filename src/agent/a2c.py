@@ -52,9 +52,8 @@ class A2CAgent(Agent):
     def policy(self, state):
         # Todo moving back to cpu?
         mu, sigma = self.actor_net(T.tensor([state], device=self.device, dtype=T.float32))
-        mu = mu.data.cpu().numpy()
-        sigma = sigma.data.cpu().numpy()
-        actions = numpy.random.normal(mu, sigma)
+        actions = T.distributions.Normal(mu, sigma).sample()
+        actions = T.flatten(actions)
         actions = numpy.clip(actions, -1, 1)
         return actions
 
@@ -82,7 +81,7 @@ class A2CAgent(Agent):
             states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
 
             rewards = T.tensor(rewards, device=self.device, dtype=T.float)
-            actions = T.tensor(actions, device=self.device, dtype=T.long)
+            actions = T.tensor(actions, device=self.device, dtype=T.float32)
             discounted_returns = self.calculate_discounted_reward(rewards)
             discounted_returns = T.tensor(discounted_returns, device=self.device, dtype=T.float).detach()
             normalized_returns = (discounted_returns - discounted_returns.mean())
@@ -97,6 +96,8 @@ class A2CAgent(Agent):
             policy_losses = []
             value_losses = []
             for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values, next_state_values, normalized_returns, rewards):
+                action = T.flatten(action)
+                probs = T.flatten(probs)
                 #advantage = self.advantage_temporal_difference(reward, value, next_value)
                 advantage = self.advantage(R, value)
                 m = Categorical(probs)
