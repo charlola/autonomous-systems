@@ -1,6 +1,7 @@
 from src.environment import worm
 from src.agent.a2c import A2CAgent
-from src.agent.ppo import PPOAgent
+from src.ppo.ppo import PPOAgent
+from src.ppo.config import params, hyperparams
 
 def episode(env, agent, nr_episode, hyperparams):
     state = env.reset()
@@ -22,24 +23,6 @@ def episode(env, agent, nr_episode, hyperparams):
 
 
 if __name__ == "__main__":
-
-    # define parameter
-    params = {
-        "episodes": 100,
-        "no_graphics": False
-    }
-
-    # define hyperparameter
-    hyperparams = {
-        "discount_factor": 0.99,
-        "epsilon": 0.2,
-        "lambda": 0.95,
-        "alpha_actor": 0.001,
-        "alpha_critic": 0.001,
-        "gamma": 0.99,
-        "step_size": 10,
-        "k": 10,
-    }
 
     # load environment
     env = worm.load_env(no_graphics=params["no_graphics"])
