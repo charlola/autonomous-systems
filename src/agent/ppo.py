@@ -7,30 +7,32 @@ from torch.distributions import MultivariateNormal
 import random
 
 class ActorCritic(nn.Module):
-    def __init__(self, nr_input_features, action_dim, nr_hidden_units = 64, device="cpu", action_std_init=0.6):
+    def __init__(self, state_dim, action_dim, nr_hidden_units = 64, device="cpu", action_std_init=0.6):
         super(ActorCritic, self).__init__()
 
+        self.device     = device
+        self.state_dim  = state_dim
         self.action_dim = action_dim
-        self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
+
+        self.set_action_std(action_std_init)
         
         self.actor = nn.Sequential(
-            nn.Linear(nr_input_features, nr_hidden_units),
-            nn.Tanh(), # evtl nn.Tanh() statt ReLU
+            nn.Linear(state_dim, nr_hidden_units),
+            nn.Tanh(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
-            nn.Tanh(),# evtl nn.Tanh() statt ReLU,
+            nn.Tanh(),
             nn.Linear(nr_hidden_units, action_dim),
-            nn.Tanh(),# evtl nn.Tanh() statt ReLU,
+            nn.Tanh()
         )
         
         self.critic = nn.Sequential(
-            nn.Linear(nr_input_features, nr_hidden_units),
-            nn.Tanh(), # evtl nn.Tanh() statt ReLU
+            nn.Linear(state_dim, nr_hidden_units),
+            nn.Tanh(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
-            nn.Tanh(),# evtl nn.Tanh() statt ReLU,
+            nn.Tanh(),
             nn.Linear(nr_hidden_units, 1),
-            nn.Tanh(),# evtl nn.Tanh() statt ReLU,
+            nn.Tanh()
         )
-        
 
     def forward(self, state):
         raise NotImplementedError
@@ -44,9 +46,11 @@ class ActorCritic(nn.Module):
         action_logprob = dist.log_prob(action)
         
         return action.detach(), action_logprob.detach()
-        x = self.fc_net(x)
-        x = x.view(x.size(0), -1)
-        return F.softmax(self.action_head(x), dim=-1)
+
+    def set_action_std(self, action_std):
+        dim   = (self.action_dim,)
+        value = action_std * action_std
+        self.action_var = torch.full(dim, value).to(self.device)
 
 class ReplayBuffer:
     def __init__(self, batch_size):
@@ -86,8 +90,8 @@ class PPOAgent(Agent):
         self.alpha_actor = params["alpha_actor"]
         self.alpha_critic = params["alpha_critic"]
         self.gamma = params["gamma"]
-        self.epsilon = np.finfo(np.float32).eps.item()
-        self.k = 5
+        self.step_size = params["step_size"]
+        self.eps = np.finfo(np.float32).eps.item()
 
         self.net = ActorCritic(57, 9)
 
@@ -112,6 +116,30 @@ class PPOAgent(Agent):
         return self.net.act(states)
 
     def update(self, state, action, reward, next_state, done):
+        transition = (state, action, reward, next_state, done)
+        self.transitions.append(transition)
+
+        if done or len(self.transitions) == self.step_size:
+            states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
+            actions = torch.tensor(actions, device=self.device, dtype=torch.long)
+
+            # Calculate and normalize discounted returns
+            discounted_returns = []
+            R = 0
+            for reward in reversed(rewards):
+                R = reward + self.gamma * R
+                discounted_returns.insert(0, R)
+
+            discounted_returns = torch.tensor(discounted_returns, device=self.device, dtype=torch.float).detach()
+            normalized_returns = (discounted_returns - discounted_returns.mean())
+            normalized_returns /= (discounted_returns.std() + self.eps)
+
+            for _ in range(self.k):
+                pass
+
+            actions, action_logprobs = self.predict_policy(states)
+            next_action, next_action_logprob = self.predict_policy(next_states)
+
 
         return
         policy_losses = []

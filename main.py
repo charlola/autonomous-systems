@@ -37,6 +37,8 @@ if __name__ == "__main__":
         "alpha_actor": 0.001,
         "alpha_critic": 0.001,
         "gamma": 0.99,
+        "step_size": 10,
+        "k": 10,
     }
 
     # load environment
