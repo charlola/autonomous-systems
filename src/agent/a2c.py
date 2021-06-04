@@ -4,7 +4,6 @@ import torch.nn.functional as F
 from torch.distributions import Categorical
 from src.agent.agent import Agent
 import torch as T
-import numpy as np
 
 class A2CNet(nn.Module):
     # Todo use model = MyModel(); model.cuda()
@@ -33,6 +32,8 @@ class A2CNet(nn.Module):
 class A2CAgent(Agent):
     def __init__(self, params):
         Agent.__init__(self, params)
+        self.eps = numpy.finfo(numpy.float32).eps.item()
+        self.transitions = []
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         self.gamma = params["gamma"]
         self.alpha = params["alpha"],
@@ -46,6 +47,7 @@ class A2CAgent(Agent):
             1,
             params["nr_hidden_units"],
         ).to(self.device)
+        self.optimizer = T.optim.Adam(self.actor_net.parameters(), lr=params["alpha"])
 
     def policy(self, state):
         # Todo moving back to cpu?
@@ -54,11 +56,58 @@ class A2CAgent(Agent):
         sigma = sigma.data.cpu().numpy()
         actions = numpy.random.normal(mu, sigma)
         actions = numpy.clip(actions, -1, 1)
-        return  actions
+        return actions
 
+    def calculate_discounted_reward(self, rewards):
+        discounted_returns = []
+        R = 0 # Return
+        for reward in reversed(rewards):
+            R = reward + self.gamma * R
+            discounted_returns.append(R)
+        discounted_returns.reverse()
+        return discounted_returns
 
+    def advantage_temporal_difference(self, reward, value, next_value):
+        return reward.item() + self.gamma * next_value.item() - value.item()
+
+    def advantage(self, R, value):
+        return R - value
 
     def update(self, state, action, reward, next_state, done):
-        pass
+        self.transitions.append((state, action, reward, next_state, done))
+        loss = None
+        if done:
+            self.optimizer.zero_grad()
+
+            states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
+
+            rewards = T.tensor(rewards, device=self.device, dtype=T.float)
+            actions = T.tensor(actions, device=self.device, dtype=T.long)
+            discounted_returns = self.calculate_discounted_reward(rewards)
+            discounted_returns = T.tensor(discounted_returns, device=self.device, dtype=T.float).detach()
+            normalized_returns = (discounted_returns - discounted_returns.mean())
+            normalized_returns /= (discounted_returns.std() + self.eps)
+
+            # Calculating probabilities and state_values. Sigma is seen as probability.
+            _ , action_probs = self.actor_net(T.tensor(states, device=self.device, dtype=T.float32))
+            _, next_action_probs = self.actor_net(T.tensor(next_states, device=self.device, dtype=T.float32))
+            state_values, _ = self.critic_net(T.tensor(states, device=self.device, dtype=T.float32))
+            next_state_values, _ = self.critic_net(T.tensor(next_states, device=self.device, dtype=T.float32))
+
+            policy_losses = []
+            value_losses = []
+            for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values, next_state_values, normalized_returns, rewards):
+                #advantage = self.advantage_temporal_difference(reward, value, next_value)
+                advantage = self.advantage(R, value)
+                m = Categorical(probs)
+                policy_losses.append(-m.log_prob(action) * advantage)
+                value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32), T.tensor(R, device=self.device, dtype=T.float32)))
+
+            loss = T.stack(policy_losses).sum() + T.stack(value_losses).sum()
+            loss.backward()
+            self.optimizer.step()
+            self.transitions.clear()
+
+        return loss
 
 

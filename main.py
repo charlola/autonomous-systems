@@ -1,8 +1,5 @@
-import torch
-
 from src.environment import worm
-from src.agent.a2c import A2CAgent, A2CNet
-from src.agent.ppo import PPOAgent
+from src.agent.a2c import A2CAgent
 
 def episode(env, agent, nr_episode, hyperparams):
     state = env.reset()
@@ -28,7 +25,7 @@ if __name__ == "__main__":
     # define parameter
     params = {
         "episodes": 100,
-        "no_graphics": False,
+        "no_graphics": True,
     }
 
     # load environment
