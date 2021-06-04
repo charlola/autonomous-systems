@@ -54,8 +54,9 @@ class A2CAgent(Agent):
         action = T.distributions.Normal(mu, sigma).sample()
         action = T.flatten(action)
         # Todo add lower bound upper bound for action space
-        action = numpy.clip(action, -1, 1)
-        return action
+        # Todo why not lower then -1?
+        action = T.clip(action, -0.99, 1)
+        return action.data.cpu().numpy()
 
     def calculate_discounted_reward(self, rewards):
         discounted_returns = []
