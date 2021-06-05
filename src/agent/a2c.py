@@ -26,9 +26,11 @@ class A2CNet(nn.Module):
             nn.Softplus(),
         )
 
+        self.fc_value = nn.Linear(nr_hidden_units, 1)
+
     def forward(self, x):
         base_out = self.fc_base(x)
-        return self.fc_mu(base_out), self.fc_sigma(base_out)
+        return self.fc_mu(base_out), self.fc_sigma(base_out), self.fc_value(base_out)
 
 
 class A2CAgent(Agent):
@@ -39,20 +41,15 @@ class A2CAgent(Agent):
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
         self.gamma = params["gamma"]
         self.alpha = params["alpha"],
-        self.actor_net = A2CNet(
+        self.a2c_net = A2CNet(
             params["nr_input_features"],
             params["nr_actions"],
             params["nr_hidden_units"],
         ).to(self.device)
-        self.critic_net = A2CNet(
-            params["nr_input_features"],
-            1,
-            params["nr_hidden_units"],
-        ).to(self.device)
-        self.optimizer = T.optim.Adam(self.actor_net.parameters(), lr=params["alpha"])
+        self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
 
     def policy(self, state):
-        mu, sigma = self.actor_net(T.tensor([state], device=self.device, dtype=T.float32))
+        mu, sigma, _ = self.a2c_net(T.tensor([state], device=self.device, dtype=T.float32))
         action = T.distributions.Normal(mu, sigma).sample()
         action = T.flatten(action)
         # Todo add lower bound upper bound for action space
@@ -91,10 +88,8 @@ class A2CAgent(Agent):
             normalized_returns /= (discounted_returns.std() + self.eps)
 
             # Calculating probabilities and state_values. Sigma is seen as probability.
-            _, action_probs = self.actor_net(T.tensor(states, device=self.device, dtype=T.float32))
-            _, next_action_probs = self.actor_net(T.tensor(next_states, device=self.device, dtype=T.float32))
-            state_values, _ = self.critic_net(T.tensor(states, device=self.device, dtype=T.float32))
-            next_state_values, _ = self.critic_net(T.tensor(next_states, device=self.device, dtype=T.float32))
+            _, action_probs, state_values = self.a2c_net(T.tensor(states, device=self.device, dtype=T.float32))
+            _, next_action_probs, next_state_values = self.a2c_net(T.tensor(next_states, device=self.device, dtype=T.float32))
 
             # Calculate losses
             policy_losses = []
