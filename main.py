@@ -1,7 +1,9 @@
 from src.environment import worm
 from src.agent.a2c import A2CAgent
+from torch.utils.tensorboard import SummaryWriter
 
-def episode(env, agent, nr_episode, hyperparams):
+
+def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
     discounted_return = 0
     done = False
@@ -14,14 +16,15 @@ def episode(env, agent, nr_episode, hyperparams):
         # 3. Integrate new experience into agent
         agent.update(state, action, reward, next_state, done)
         state = next_state
-        discounted_return += (hyperparams["discount_factor"]**time_step)*reward
+        discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
         time_step += 1
+    writer.add_scalar('Loss/epoch', discounted_return, nr_episode)
+
     print(nr_episode, ":", discounted_return)
     return discounted_return
 
 
 if __name__ == "__main__":
-
     # define parameter
     params = {
         "episodes": 100,
@@ -41,11 +44,15 @@ if __name__ == "__main__":
         "nr_actions": env.action_space.shape[0]
     }
 
+    # create TensorBoard Writer
+    writer = SummaryWriter()
+
     # create agent
     agent = A2CAgent(hyperparams)
 
     # define 
-    results = [episode(env, agent, i, hyperparams) for i in range(params["episodes"])]
+    results = [episode(env, agent, i, hyperparams, writer) for i in range(params["episodes"])]
 
     # close environment
     env.close()
+    writer.flush()

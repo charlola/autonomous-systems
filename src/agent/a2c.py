@@ -5,6 +5,7 @@ from torch.distributions import Categorical
 from src.agent.agent import Agent
 import torch as T
 
+
 class A2CNet(nn.Module):
     # Todo use model = MyModel(); model.cuda()
     def __init__(self, nr_input_features, nr_actions, nr_hidden_units):
@@ -28,6 +29,7 @@ class A2CNet(nn.Module):
     def forward(self, x):
         base_out = self.fc_base(x)
         return self.fc_mu(base_out), self.fc_sigma(base_out)
+
 
 class A2CAgent(Agent):
     def __init__(self, params):
@@ -60,7 +62,7 @@ class A2CAgent(Agent):
 
     def calculate_discounted_reward(self, rewards):
         discounted_returns = []
-        R = 0 # Return
+        R = 0  # Return
         for reward in reversed(rewards):
             R = reward + self.gamma * R
             discounted_returns.append(R)
@@ -89,7 +91,7 @@ class A2CAgent(Agent):
             normalized_returns /= (discounted_returns.std() + self.eps)
 
             # Calculating probabilities and state_values. Sigma is seen as probability.
-            _ , action_probs = self.actor_net(T.tensor(states, device=self.device, dtype=T.float32))
+            _, action_probs = self.actor_net(T.tensor(states, device=self.device, dtype=T.float32))
             _, next_action_probs = self.actor_net(T.tensor(next_states, device=self.device, dtype=T.float32))
             state_values, _ = self.critic_net(T.tensor(states, device=self.device, dtype=T.float32))
             next_state_values, _ = self.critic_net(T.tensor(next_states, device=self.device, dtype=T.float32))
@@ -97,14 +99,16 @@ class A2CAgent(Agent):
             # Calculate losses
             policy_losses = []
             value_losses = []
-            for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values, next_state_values, normalized_returns, rewards):
+            for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values,
+                                                                   next_state_values, normalized_returns, rewards):
                 action = T.flatten(action)
                 probs = T.flatten(probs)
-                #advantage = self.advantage_temporal_difference(reward, value, next_value)
+                # advantage = self.advantage_temporal_difference(reward, value, next_value)
                 advantage = self.advantage(R, value)
                 m = Categorical(probs)
                 policy_losses.append(-m.log_prob(action) * advantage)
-                value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32), T.tensor(R, device=self.device, dtype=T.float32)))
+                value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32),
+                                                     T.tensor(R, device=self.device, dtype=T.float32)))
 
             loss = T.stack(policy_losses).sum() + T.stack(value_losses).sum()
             loss.backward()
@@ -112,5 +116,3 @@ class A2CAgent(Agent):
             self.transitions.clear()
 
         return loss
-
-
