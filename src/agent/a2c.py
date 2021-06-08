@@ -63,14 +63,13 @@ class A2CAgent(Agent):
 
         self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
 
+    def save(self, checkpoint_path):
+        self.a2c_net.save(checkpoint_path)
+
     def policy(self, state):
         mu, sigma, _ = self.a2c_net(T.tensor([state], device=self.device, dtype=T.float32))
         action = T.distributions.Normal(mu, sigma).sample()
         action = T.flatten(action)
-        # Todo add lower bound upper bound for action space
-        # Todo why not lower then -1?
-        # Todo Log distibution vs norm distribution
-        # Todo sigma als parameter der dekrementiert wird?
         action = T.clip(action, -0.99, 1)
         return action.data.cpu().numpy()
 
@@ -105,21 +104,20 @@ class A2CAgent(Agent):
             normalized_returns /= (discounted_returns.std() + self.eps)
 
             # Calculating probabilities and state_values. Sigma is seen as probability.
-            _, action_probs, state_values = self.a2c_net(T.tensor(states, device=self.device, dtype=T.float32))
-            _, next_action_probs, next_state_values = self.a2c_net(T.tensor(next_states, device=self.device, dtype=T.float32))
+            action_mus, action_sigs, state_values = self.a2c_net(T.tensor(states, device=self.device, dtype=T.float32))
+            _, _, next_state_values = self.a2c_net(T.tensor(next_states, device=self.device, dtype=T.float32))
+
+            # Calculate normal distributions
+            action_probs = [T.distributions.Normal(action_mu, action_sig) for action_mu, action_sig in zip(action_mus, action_sigs)]
 
             # Calculate losses
             policy_losses = []
             value_losses = []
             for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values,
                                                                    next_state_values, normalized_returns, rewards):
-                action = T.flatten(action)
-                probs = T.flatten(probs)
                 # advantage = self.advantage_temporal_difference(reward, value, next_value)
                 advantage = self.advantage(R, value)
-                # Todo make to normal or to log_prob in forward method
-                m = Categorical(probs)
-                policy_losses.append(-m.log_prob(action) * advantage)
+                policy_losses.append(-probs.log_prob(action) * advantage)
                 value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32),
                                                      T.tensor(R, device=self.device, dtype=T.float32)))
 
@@ -129,6 +127,3 @@ class A2CAgent(Agent):
             self.transitions.clear()
 
         return loss
-
-    def save(self, checkpoint_path):
-        self.a2c_net.save(checkpoint_path)
