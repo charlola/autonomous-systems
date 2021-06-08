@@ -16,7 +16,6 @@ class A2CNet(nn.Module):
             nn.ReLU(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
             nn.ReLU()
-            # Todo Hier auch Tanh()?
         )
         self.fc_mu = nn.Sequential(
             nn.Linear(nr_hidden_units, nr_actions),
