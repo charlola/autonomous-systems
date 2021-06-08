@@ -1,6 +1,8 @@
+import arguments
 from src.environment import worm
 from src.agent.a2c import A2CAgent
 from torch.utils.tensorboard import SummaryWriter
+import gym
 
 
 def episode(env, agent, nr_episode, hyperparams, writer):
@@ -25,14 +27,25 @@ def episode(env, agent, nr_episode, hyperparams, writer):
 
 
 if __name__ == "__main__":
+    use_args = False
     # define parameter
-    params = {
-        "episodes": 100,
-        "no_graphics": True,
-    }
+    if use_args:
+        args = arguments.collect()
+        params = {
+            "model": args.model,
+            "episodes": args.episodes,
+            "no_graphics": args.graphics,
+        }
+    else:
+        params = {
+            "model": "a2c",
+            "episodes": 100,
+            "no_graphics": True,
+        }
 
     # load environment
     env = worm.load_env(no_graphics=params["no_graphics"])
+    # env = gym.make('CartPole-v1')
 
     # define hyperparameter
     hyperparams = {
@@ -50,9 +63,12 @@ if __name__ == "__main__":
     # create agent
     agent = A2CAgent(hyperparams)
 
-    # define 
-    results = [episode(env, agent, i, hyperparams, writer) for i in range(params["episodes"])]
+    # define
+    try:
+        results = [episode(env, agent, i, hyperparams, writer) for i in range(params["episodes"])]
+    finally:
+        agent.save(params["model"])
+        writer.flush()
 
     # close environment
     env.close()
-    writer.flush()

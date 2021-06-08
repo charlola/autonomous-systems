@@ -1,3 +1,5 @@
+import os
+
 import numpy.random
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,6 +34,14 @@ class A2CNet(nn.Module):
         base_out = self.fc_base(x)
         return self.fc_mu(base_out), self.fc_sigma(base_out), self.fc_value(base_out)
 
+    def save(self, checkpoint_path):
+        T.save(self.state_dict(), checkpoint_path)
+
+    def load(self, checkpoint_path):
+        weight = T.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        self.load_state_dict(weight)
+        self.eval()
+
 
 class A2CAgent(Agent):
     def __init__(self, params):
@@ -46,6 +56,11 @@ class A2CAgent(Agent):
             params["nr_actions"],
             params["nr_hidden_units"],
         ).to(self.device)
+
+        # load model from file
+        if "model" in params and os.path.isfile(params["model"]):
+            self.a2c_net.load(params["model"])
+
         self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
 
     def policy(self, state):
@@ -114,3 +129,6 @@ class A2CAgent(Agent):
             self.transitions.clear()
 
         return loss
+
+    def save(self, checkpoint_path):
+        self.a2c_net.save(checkpoint_path)
