@@ -16,6 +16,7 @@ class A2CNet(nn.Module):
             nn.ReLU(),
             nn.Linear(nr_hidden_units, nr_hidden_units),
             nn.ReLU()
+            # Todo Hier auch Tanh()?
         )
         self.fc_mu = nn.Sequential(
             nn.Linear(nr_hidden_units, nr_actions),
@@ -54,6 +55,8 @@ class A2CAgent(Agent):
         action = T.flatten(action)
         # Todo add lower bound upper bound for action space
         # Todo why not lower then -1?
+        # Todo Log distibution vs norm distribution
+        # Todo sigma als parameter der dekrementiert wird?
         action = T.clip(action, -0.99, 1)
         return action.data.cpu().numpy()
 
@@ -100,6 +103,7 @@ class A2CAgent(Agent):
                 probs = T.flatten(probs)
                 # advantage = self.advantage_temporal_difference(reward, value, next_value)
                 advantage = self.advantage(R, value)
+                # Todo make to normal or to log_prob in forward method
                 m = Categorical(probs)
                 policy_losses.append(-m.log_prob(action) * advantage)
                 value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32),
