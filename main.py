@@ -23,17 +23,31 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
-        agent.update(state, action, reward, next_state, done)
+        if params['learn']: agent.update(state, action, reward, next_state, done)
         state = next_state
         discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
         time_step += 1
     writer.add_scalar('Loss/epoch', discounted_return, nr_episode)
-
     print(nr_episode, ":", discounted_return)
     return discounted_return
 
 if __name__ == "__main__":
     use_args = False
+
+    # load environment
+    # env = worm.load_env(no_graphics=params["no_graphics"])
+    # env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('Pendulum-v0')
+
+    # define hyperparameter
+    hyperparams = {
+        "gamma": 0.99,
+        "alpha": 0.001,
+        "discount_factor": 0.99,
+        "nr_hidden_units": 64,
+        "advantage": "TD",
+    }
+
     # define parameter
     if use_args:
         args = arguments.collect()
@@ -44,25 +58,14 @@ if __name__ == "__main__":
         }
     else:
         params = {
-            "model": "models\\mountain.nn",
+            "learn": True,
+            "model": "models\\pendel.nn",
             "load_model": False,
-            "episodes": 1000,
+            "episodes": 1000000,
             "no_graphics": True,
+            "nr_input_features": env.observation_space.shape[0],
+            "nr_actions": env.action_space.shape[0],
         }
-
-    # load environment
-    # env = worm.load_env(no_graphics=params["no_graphics"])
-    env = gym.make('MountainCarContinuous-v0')
-
-    # define hyperparameter
-    hyperparams = {
-        "gamma": 0.99,
-        "alpha": 0.001,
-        "discount_factor": 0.99,
-        "nr_hidden_units": 64,
-        "nr_input_features": env.observation_space.shape[0],
-        "nr_actions": env.action_space.shape[0]
-    }
 
     # create TensorBoard Writer
     writer = SummaryWriter()

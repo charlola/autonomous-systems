@@ -1,6 +1,7 @@
 ### Individual gitignore ###
 .vscode
 .idea
+models/*
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
 /runs/

@@ -49,11 +49,12 @@ class A2CAgent(Agent):
         self.eps = numpy.finfo(numpy.float32).eps.item()
         self.transitions = []
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
+        self.advantage = hyperparams["advantage"]
         self.gamma = hyperparams["gamma"]
         self.alpha = hyperparams["alpha"],
         self.a2c_net = A2CNet(
-            hyperparams["nr_input_features"],
-            hyperparams["nr_actions"],
+            params["nr_input_features"],
+            params["nr_actions"],
             hyperparams["nr_hidden_units"],
         ).to(self.device)
 
@@ -85,8 +86,13 @@ class A2CAgent(Agent):
     def advantage_temporal_difference(self, reward, value, next_value):
         return reward.item() + self.gamma * next_value.item() - value.item()
 
-    def advantage(self, R, value):
+    def advantage_r_l(self, R, value):
         return R - value
+
+    def get_advantage(self, R, reward, value, next_value):
+        if self.advantage == "TD": return self.advantage_temporal_difference(reward, value, next_value)
+        elif self.advantage == "RL": return self.advantage_r_l(R, value)
+        return self.advantage_r_l()
 
     def update(self, state, action, reward, next_state, done):
         self.transitions.append((state, action, reward, next_state, done))
@@ -115,8 +121,7 @@ class A2CAgent(Agent):
             value_losses = []
             for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values,
                                                                    next_state_values, normalized_returns, rewards):
-                # advantage = self.advantage_temporal_difference(reward, value, next_value)
-                advantage = self.advantage(R, value)
+                advantage = self.get_advantage(R, reward, value, next_value)
                 policy_losses.append(-probs.log_prob(action) * advantage)
                 value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32),
                                                      T.tensor(R, device=self.device, dtype=T.float32)))
