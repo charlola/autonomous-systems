@@ -3,7 +3,13 @@ from src.environment import worm
 from src.agent.a2c import A2CAgent
 from torch.utils.tensorboard import SummaryWriter
 import gym
+import signal
+import sys
 
+
+def signal_handler(sig, frame):
+    agent.save(params["model"])
+    sys.exit(0)
 
 def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
@@ -11,6 +17,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     done = False
     time_step = 0
     while not done:
+        if not params['no_graphics']: env.render()
         # 1. Select action according to policy
         action = agent.policy(state)
         # 2. Execute selected action
@@ -25,7 +32,6 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     print(nr_episode, ":", discounted_return)
     return discounted_return
 
-
 if __name__ == "__main__":
     use_args = False
     # define parameter
@@ -38,14 +44,15 @@ if __name__ == "__main__":
         }
     else:
         params = {
-            "model": "a2c",
-            "episodes": 100,
+            "model": "models\\mountain.nn",
+            "load_model": False,
+            "episodes": 1000,
             "no_graphics": True,
         }
 
     # load environment
-    env = worm.load_env(no_graphics=params["no_graphics"])
-    # env = gym.make('CartPole-v1')
+    # env = worm.load_env(no_graphics=params["no_graphics"])
+    env = gym.make('MountainCarContinuous-v0')
 
     # define hyperparameter
     hyperparams = {
@@ -59,9 +66,9 @@ if __name__ == "__main__":
 
     # create TensorBoard Writer
     writer = SummaryWriter()
-
+    signal.signal(signal.SIGINT, signal_handler)
     # create agent
-    agent = A2CAgent(hyperparams)
+    agent = A2CAgent(hyperparams, params)
 
     # define
     try:

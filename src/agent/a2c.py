@@ -44,24 +44,24 @@ class A2CNet(nn.Module):
 
 
 class A2CAgent(Agent):
-    def __init__(self, params):
-        Agent.__init__(self, params)
+    def __init__(self, hyperparams, params):
+        Agent.__init__(self, hyperparams)
         self.eps = numpy.finfo(numpy.float32).eps.item()
         self.transitions = []
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
-        self.gamma = params["gamma"]
-        self.alpha = params["alpha"],
+        self.gamma = hyperparams["gamma"]
+        self.alpha = hyperparams["alpha"],
         self.a2c_net = A2CNet(
-            params["nr_input_features"],
-            params["nr_actions"],
-            params["nr_hidden_units"],
+            hyperparams["nr_input_features"],
+            hyperparams["nr_actions"],
+            hyperparams["nr_hidden_units"],
         ).to(self.device)
 
         # load model from file
-        if "model" in params and os.path.isfile(params["model"]):
+        if params["load_model"] and os.path.isfile(params["model"]):
             self.a2c_net.load(params["model"])
 
-        self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=params["alpha"])
+        self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=hyperparams["alpha"])
 
     def save(self, checkpoint_path):
         self.a2c_net.save(checkpoint_path)
