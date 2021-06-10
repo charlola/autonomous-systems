@@ -5,7 +5,7 @@ models/*
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
 /runs/
-
+/models/*
 # Partly created by https://www.gitignore.io/api/vim,kate,linux,emacs,macos,python,windows,pycharm,eclipse,sublimetext,intellij+iml,visualstudiocode
 *.tgz
 
