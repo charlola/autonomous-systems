@@ -23,6 +23,8 @@ model = ""
 checkpoint_step = 500
 no_graphics = True
 
+episodes = 10000
+
 
 def get_trailing_number(s):
     m = re.search(r'\d+$', s)
@@ -37,6 +39,7 @@ parser.add_argument("--checkpoint",
 parser.add_argument("--learn", help="Enter True for Training mode", type=bool)
 parser.add_argument("--check_step", help="The amount of Episodes when a checkpoint will be created", type=int)
 parser.add_argument("--no_graphics", help="True or false", type=bool)
+parser.add_argument("--episodes", help="Set amnt. of Episodes", type=int)
 args = parser.parse_args()
 
 if args.domain:
@@ -73,6 +76,9 @@ if args.learn:
 
 if args.no_graphics:
     no_graphics = args.no_graphics
+
+if args.episodes:
+    episodes = args.episodes
 
 
 def remove_best():
@@ -119,7 +125,7 @@ if __name__ == "__main__":
         "learn": learn,
         "model": model,
         "load_model": load_model,
-        "episodes": 10000,
+        "episodes": episodes,
         "no_graphics": no_graphics,
         "nr_input_features": env.observation_space.shape[0],
         "nr_actions": env.action_space.shape[0],
@@ -151,7 +157,6 @@ if __name__ == "__main__":
                     agent.save(checkpoint_dir + domain + "-" + str(i) + "_best.nn")
                 if i != 0 and i % checkpoint_step == 0:
                     agent.save(checkpoint_dir + domain + "_" + str(i) + ".nn")
-                last_step = i
     finally:
         if learn:
             agent.save(checkpoint_dir + domain + "_" + str(i) + ".nn")
