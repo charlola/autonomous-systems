@@ -1,7 +1,9 @@
 from src.environment import worm
 from src.agent.a2c import A2CAgent
 from src.ppo.ppo import PPOAgent
-from src.ppo.config import params, hyperparams
+from src.ppo.config import hyperparams
+from src import arguments
+import matplotlib.pyplot as plt
 
 def episode(env, agent, nr_episode, hyperparams):
     state = env.reset()
@@ -9,6 +11,8 @@ def episode(env, agent, nr_episode, hyperparams):
     done = False
     time_step = 0
     while not done:
+        if args.graphics:
+            env.render()
         # 1. Select action according to policy
         action = agent.policy(state)
         # 2. Execute selected action
@@ -16,7 +20,7 @@ def episode(env, agent, nr_episode, hyperparams):
         # 3. Integrate new experience into agent
         agent.update(state, action, reward, next_state, done)
         state = next_state
-        discounted_return += (hyperparams["discount_factor"]**time_step)*reward
+        discounted_return += (hyperparams["gamma"]**time_step)*reward
         time_step += 1
     print(nr_episode, ":", discounted_return)
     return discounted_return
@@ -24,14 +28,44 @@ def episode(env, agent, nr_episode, hyperparams):
 
 if __name__ == "__main__":
 
+    args = arguments.collect()
+
     # load environment
-    env = worm.load_env(no_graphics=params["no_graphics"])
+    #env = worm.load_env(no_graphics=not args.graphics)
+    env = worm.create_gym_env()
+    hyperparams["env"] = env
 
     # create agent
     agent = PPOAgent(hyperparams)
 
     # define 
-    results = [episode(env, agent, i, hyperparams) for i in range(params["episodes"])]
+    returns = list()
+    running_reward = None
+    running_rewards = list()
+    try:
+        for i in range(args.episodes):
+            score = episode(env, agent, i, hyperparams)
+            if running_reward is None:
+                running_reward = score
+            running_reward = running_reward * 0.9 + score * 0.1
+            running_rewards.append(running_reward)
+            returns.append(score)
+    except KeyboardInterrupt:
+        pass
+    except Exception as e:
+        raise e
+    finally:
+        agent.save(args.model)
+
+    
+    x = range(len(running_rewards))
+    y = running_rewards
+
+    plt.plot(x,y)
+    plt.title("Progress")
+    plt.xlabel("episode")
+    plt.ylabel("undiscounted return")
+    plt.show()
 
     # close environment
     env.close()
