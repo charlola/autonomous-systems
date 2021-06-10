@@ -1,4 +1,3 @@
-import arguments
 import gym
 import signal
 import sys
@@ -115,25 +114,16 @@ if __name__ == "__main__":
         env = worm.load_env(no_graphics=no_graphics)
     else:
         env = gym.make('MountainCarContinuous-v0')
-    use_args = False
-    # define parameter
-    if use_args:
-        args = arguments.collect()
-        params = {
-            "model": args.model,
-            "episodes": args.episodes,
-            "no_graphics": args.graphics,
-        }
-    else:
-        params = {
-            "learn": learn,
-            "model": model,
-            "load_model": load_model,
-            "episodes": 10000,
-            "no_graphics": no_graphics,
-            "nr_input_features": env.observation_space.shape[0],
-            "nr_actions": env.action_space.shape[0],
-        }
+
+    params = {
+        "learn": learn,
+        "model": model,
+        "load_model": load_model,
+        "episodes": 10000,
+        "no_graphics": no_graphics,
+        "nr_input_features": env.observation_space.shape[0],
+        "nr_actions": env.action_space.shape[0],
+    }
 
     # define hyperparameter
     hyperparams = {
