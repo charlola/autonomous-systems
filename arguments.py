@@ -20,6 +20,7 @@ def collect():
     parser.add_argument("--check_step", help="The amount of Episodes when a checkpoint will be created", type=int)
     parser.add_argument("--no_graphics", help="True or false", type=bool)
     parser.add_argument("--episodes", help="Set amnt. of Episodes", type=int)
+    parser.add_argument('--file', help="Enter path to a file containing arguments.(--file args.txt)", type=open, action=LoadFromFile)
     return parser.parse_args()
 
 
@@ -104,3 +105,10 @@ def get_save_model(last_episode, is_best=False):
     domain = get_domain()
     _, dir, _, _ = get_checkpoint_path()
     return dir + domain + "-" + str(last_episode) + ("_best.nn" if is_best else ".nn")
+
+
+class LoadFromFile(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        with values as f:
+            # parse arguments in the file and store them in the target namespace
+            parser.parse_args(f.read().split(), namespace)

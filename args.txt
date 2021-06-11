@@ -1,0 +1,5 @@
+--domain car
+--learn True
+--check_step 500
+--no_graphics True
+--episodes 1000
