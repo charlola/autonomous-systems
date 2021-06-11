@@ -46,8 +46,8 @@ class ActorCritic():
     def __init__(self, params, device="cpu"):
         self.device = device
         
-        self.action_low  = params["env"].min_action
-        self.action_high = params["env"].max_action
+        self.action_low  = params["env"].action_space.low[0]
+        self.action_high = params["env"].action_space.high[0]
         action_dim = params["env"].action_space.shape[0]
         state_dim  = params["env"].observation_space.shape[0]
         nr_hidden_units = params['nr_hidden_units'] 
@@ -62,8 +62,7 @@ class ActorCritic():
         self.optimizer.step()
 
     def act(self, states):
-        states = torch.tensor(states, device=self.device, dtype=torch.float)
-
+        
         # collect distribution parameter
         with torch.no_grad():
             mean, sigma, _ = self.net(states)

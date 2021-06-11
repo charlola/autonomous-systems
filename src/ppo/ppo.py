@@ -43,8 +43,11 @@ class PPOAgent(Agent):
 
     def policy(self, state):
         """Choose an action based on the actor net"""
+
+        states = torch.tensor([state], device=self.device, dtype=torch.float)
+
         #return np.random.rand(9,1)
-        action, logprob = self.net_backup.act([state])
+        action, logprob = self.net_backup.act(states)
 
         # collect action and its probability
         self.trajectory.add_policy(action, logprob)
@@ -52,6 +55,9 @@ class PPOAgent(Agent):
         return action
 
     def update(self, state, action, reward, next_state, done):
+        state      = torch.tensor(state,      dtype=torch.float).to(self.device)
+        next_state = torch.tensor(next_state, dtype=torch.float).to(self.device)
+
         # collect states and rewards
         self.trajectory.add_update(state, next_state, reward)
 
@@ -61,30 +67,41 @@ class PPOAgent(Agent):
 
     def train(self):
         # wrap as tensors
-        states      = torch.tensor(self.trajectory.states, device=self.device, dtype=torch.float)
-        next_states = torch.tensor(self.trajectory.next_states, device=self.device, dtype=torch.float)
-        actions     = torch.tensor(self.trajectory.actions, device=self.device, dtype=torch.float)
-        logprobs    = torch.tensor(self.trajectory.logprobs, device=self.device, dtype=torch.float)
+        states      = torch.squeeze(torch.stack(self.trajectory.states, dim=0)).detach().to(self.device)
+        next_states = torch.squeeze(torch.stack(self.trajectory.next_states, dim=0)).detach().to(self.device)
+        actions     = torch.squeeze(torch.stack(self.trajectory.actions,  dim=0)).detach().to(self.device)
+        logprobs    = torch.squeeze(torch.stack(self.trajectory.logprobs, dim=0)).detach().to(self.device)
         
-        # calculate advantage temporal difference actor-critic 
         rewards    = self.normalize_rewards(self.trajectory.rewards)
 
+        batches = self.create_batches()
+
         # TODO evtl andere loop sachen 
-        for _ in range(self.k):
+        for k in range(self.k):
 
-            advantages = self.calculate_advantage(rewards, states, next_states)
-            
-            values, new_logprobs, entropy = self.net.collect(states, actions)
-            
-            actor_loss  = self.get_actor_loss(new_logprobs, logprobs, advantages)
-            critic_loss = self.get_critic_loss(values, rewards)
-            noise       = self.get_noise(entropy)
+            # Calculate losses
+            actor_losses = []
+            critic_losses = []
+            entropy_losses = []
 
-            # TODO split actor and critic - maybe this causes the -10 confusion
-            loss = actor_loss - noise + critic_loss 
+            for index in batches[k]:
+
+                advantage = self.calculate_advantage(rewards[index], states[index], next_states[index])
+            
+                value, new_logprob, entropy = self.net.collect(states[index], actions[index])
+                
+                actor_loss  = self.get_actor_loss(new_logprob, logprobs[index], advantage)
+                critic_loss = self.get_critic_loss(value, rewards[index])
+                noise       = self.get_noise(entropy)
+
+                actor_losses.append(actor_loss)
+                critic_losses.append(critic_loss)
+                entropy_losses.append(noise)
+
+            loss = torch.stack(actor_losses) + torch.stack(critic_losses) - torch.stack(entropy_losses)
 
             # take gradient step
-            self.net.optimize(torch.mean(loss))
+            self.net.optimize(loss.mean())
 
         # Copy new weights into old policy
         self.net_backup.copy_weights(self.net)
@@ -92,10 +109,15 @@ class PPOAgent(Agent):
         # Clear buffer
         self.trajectory.clear()
 
-    def sample(self):
+    def create_batches(self):
         arr = np.arange(self.trajectory.size())
         np.random.shuffle(arr)
-        return arr[:self.batch_size]
+
+        batches = list()
+        for i in range(self.k):
+            batch = arr[self.batch_size*i:self.batch_size*(i+1)]
+            batches.append(batch)
+        return batches
 
     def save(self, path):
         self.net.save(path)

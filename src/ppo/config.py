@@ -17,13 +17,13 @@ hyperparams = {
     "epsilon": 0.1,         # 0.1, 0.2, 0.3
 
     # number of times to update the actor-critic
-    "k": 3,
+    "k": 4,
 
     # number of steps to collect for each trajectory
-    "step_size": 128,
+    "step_size": 64,
 
     # define config/hyperparams for PPO agent
-    "batch_size": 8,
+    "batch_size": 12,
     
     # define hyperparameter
     "lambda": 0.95,         # 0.9 to 1
