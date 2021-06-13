@@ -2,3 +2,4 @@
 .idea
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
+__pycache__
