@@ -7,7 +7,7 @@ def str2bool(str):
 
 def collect():
     parser = argparse.ArgumentParser(description='Define the parameter for Captain Wurmi')
-    parser.add_argument("-e", "--episodes", default=300, metavar='N', type=int,
+    parser.add_argument("-e", "--episodes", default=100, metavar='N', type=int,
                         help='Define the number of episodes')
 
     parser.add_argument("-m", "--model", default="ppo.nn", metavar='S', type=str, help='Define the model to be used/overwritten')

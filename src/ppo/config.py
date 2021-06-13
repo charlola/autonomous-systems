@@ -27,7 +27,7 @@ hyperparams = {
     "step_size": 128,
 
     # define config/hyperparams for PPO agent
-    "batch_size": 12,
+    "batch_size": 32,
     
     # define hyperparameter
     "lambda": 0.95,         # 0.9 to 1
