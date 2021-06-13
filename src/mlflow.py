@@ -9,8 +9,8 @@ def log_artifact_example():
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
 mlflow.set_experiment("test")
 
-params = { "p1": A, "p2": B}
-metric = {"m1": 12 , "m2": 34}
+params = {"p1": "A", "p2": "B"}
+metric = {"m1": 12, "m2": 34}
 
 
 mlflow.log_metrics(metric)
