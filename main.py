@@ -4,6 +4,10 @@ from src.ppo.ppo import PPOAgent
 from src.ppo.config import hyperparams
 from src import arguments
 import matplotlib.pyplot as plt
+from ray import tune
+import logger
+from ray.tune.integration.mlflow import mlflow_mixin
+import mlflow
 
 def episode(env, agent, nr_episode, hyperparams):
     state = env.reset()
@@ -25,26 +29,27 @@ def episode(env, agent, nr_episode, hyperparams):
     print(nr_episode, ":", discounted_return)
     return discounted_return
 
-
-if __name__ == "__main__":
-
-    args = arguments.collect()
+@mlflow_mixin
+def trainable(config):
 
     # load environment
-    #env = worm.load_env(no_graphics=not args.graphics)
+    # env = worm.load_env(no_graphics=not args.graphics)
     env = worm.create_gym_env()
-    hyperparams["env"] = env
+    config["env"] = env
+
+    #log params
+    mlflow.log_param("gamma", config["gamma"])
 
     # create agent
-    agent = PPOAgent(hyperparams)
+    agent = PPOAgent(config)
 
-    # define 
+    # define
     returns = list()
     running_reward = None
     running_rewards = list()
     try:
         for i in range(args.episodes):
-            score = episode(env, agent, i, hyperparams)
+            score = episode(env, agent, i, config)
             if running_reward is None:
                 running_reward = score
             running_reward = running_reward * 0.9 + score * 0.1
@@ -57,11 +62,13 @@ if __name__ == "__main__":
     finally:
         agent.save(args.model)
 
-    
+    mlflow.log_metric("score", score) # or running reward?
+    mlflow.log_metric("episodes", args.episodes)
+
     x = range(len(running_rewards))
     y = running_rewards
 
-    plt.plot(x,y)
+    plt.plot(x, y)
     plt.title("Progress")
     plt.xlabel("episode")
     plt.ylabel("undiscounted return")
@@ -69,3 +76,19 @@ if __name__ == "__main__":
 
     # close environment
     env.close()
+
+    tune.report(score=score) # or running_reward?
+
+
+if __name__ == "__main__":
+
+    args = arguments.collect()
+
+
+    analysis = tune.run(
+        trainable,
+        config=hyperparams,
+    )
+
+    df = analysis.results_df
+    logger.info("Best config:{}".format(analysis.get_best_config(metric="score", mode='max')))

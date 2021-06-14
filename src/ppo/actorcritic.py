@@ -54,7 +54,7 @@ class ActorCritic():
 
         self.net = Net(state_dim, nr_hidden_units, action_dim)
 
-        self.optimizer  = torch.optim.Adam(self.net.parameters(), lr=params["alpha"])
+        self.optimizer = torch.optim.Adam(self.net.parameters(), lr=params["alpha"])
 
     def optimize(self, loss):
         self.optimizer.zero_grad()

@@ -113,6 +113,7 @@ class PPOAgent(Agent):
         # Clear buffer
         self.trajectory.clear()
 
+
     def create_batches(self):
         arr = np.arange(self.trajectory.size())
         np.random.shuffle(arr)

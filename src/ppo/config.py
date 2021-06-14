@@ -1,10 +1,12 @@
+from ray import tune
+
 hyperparams = {
 
     # define parameter for neuronal net
     "nr_hidden_units": 64,
 
     # discount rate
-    "gamma": 0.99,         # 0.99 (most common), 0.8 to 0.9997
+    "gamma": tune.grid_search([0.99, 0.95]),         # 0.99 (most common), 0.8 to 0.9997
     
     # learning rate
     "alpha": 0.0001,        # 0.003 to 5e-6
@@ -30,6 +32,12 @@ hyperparams = {
     "batch_size": 32,
     
     # define hyperparameter
-    "lambda": 0.95,         # 0.9 to 1
+    "lambda": 0.95,     # 0.9 to 1
+
+    #config for mlflow logging
+    "mlflow": {
+            "experiment_name": "ppo",
+            "tracking_uri": "http://159.65.120.229:5000"
+        }
 
 }
