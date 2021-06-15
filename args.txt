@@ -1,5 +1,5 @@
---domain car
+--domain pendel
 --learn True
 --check_step 500
 --no_graphics True
---episodes 1000
+--episodes 10000
