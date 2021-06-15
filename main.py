@@ -4,6 +4,7 @@ import sys
 import arguments
 from src.environment import worm
 from src.agent.a2c import A2CAgent
+import torch as T
 from torch.utils.tensorboard import SummaryWriter
 
 best_result = -9999
@@ -26,6 +27,8 @@ def signal_handler(sig, frame):
 def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
     discounted_return = 0
+    loss =  0
+    entropy = 0
     done = False
     time_step = 0
     while not done:
@@ -35,12 +38,14 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
-        if params['learn']: agent.update(state, action, reward, next_state, done)
+        if params['learn']: loss = agent.update(state, action, reward, next_state, done)
         state = next_state
         discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
         time_step += 1
     writer.add_scalar('Loss/epoch', discounted_return, nr_episode)
-    print(nr_episode, ":", discounted_return)
+    # print(nr_episode, ":", discounted_return)
+    print(nr_episode, ":", "R", discounted_return, "\tL", loss.item(), "\tE", T.flatten(entropy).item())
+
     return discounted_return
 
 if __name__ == "__main__":
