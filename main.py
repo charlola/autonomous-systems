@@ -23,7 +23,6 @@ def signal_handler(sig, frame):
     agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir))
     sys.exit(0)
 
-
 def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
     discounted_return = 0
@@ -32,7 +31,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     while not done:
         if not params['no_graphics']: env.render()
         # 1. Select action according to policy
-        action = agent.policy(state)
+        action, entropy = agent.policy(state)
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
@@ -43,7 +42,6 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     writer.add_scalar('Loss/epoch', discounted_return, nr_episode)
     print(nr_episode, ":", discounted_return)
     return discounted_return
-
 
 if __name__ == "__main__":
     # load environment
@@ -72,7 +70,8 @@ if __name__ == "__main__":
         "alpha": 0.001,
         "discount_factor": 0.99,
         "nr_hidden_units": 64,
-        "advantage": "TD",
+        "entropy_factor": 0.01,
+        "advantage": "RL",
     }
 
     # create TensorBoard Writer

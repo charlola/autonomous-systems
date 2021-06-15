@@ -49,6 +49,7 @@ class A2CAgent(Agent):
         self.eps = numpy.finfo(numpy.float32).eps.item()
         self.transitions = []
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
+        self.entropy_factor = hyperparams["entropy_factor"]
         self.advantage = hyperparams["advantage"]
         self.gamma = hyperparams["gamma"]
         self.alpha = hyperparams["alpha"],
@@ -69,10 +70,11 @@ class A2CAgent(Agent):
 
     def policy(self, state):
         mu, sigma, _ = self.a2c_net(T.tensor([state], device=self.device, dtype=T.float32))
-        action = T.distributions.Normal(mu, sigma).sample()
+        dist = T.distributions.Normal(mu, sigma)
+        action = dist.sample()
         action = T.flatten(action)
         action = T.clip(action, -0.99, 1)
-        return action.data.cpu().numpy()
+        return action.data.cpu().numpy(), dist
 
     def calculate_discounted_reward(self, rewards):
         discounted_returns = []
@@ -114,19 +116,21 @@ class A2CAgent(Agent):
             _, _, next_state_values = self.a2c_net(T.tensor(next_states, device=self.device, dtype=T.float32))
 
             # Calculate normal distributions
-            action_probs = [T.distributions.Normal(action_mu, action_sig) for action_mu, action_sig in zip(action_mus, action_sigs)]
+            action_distributions = [T.distributions.Normal(action_mu, action_sig) for action_mu, action_sig in zip(action_mus, action_sigs)]
 
             # Calculate losses
             policy_losses = []
             value_losses = []
-            for probs, action, value, next_value, R, reward in zip(action_probs, actions, state_values,
+            entropy_losses = []
+            for dist, action, value, next_value, R, reward in zip(action_distributions, actions, state_values,
                                                                    next_state_values, normalized_returns, rewards):
                 advantage = self.get_advantage(R, reward, value, next_value)
-                policy_losses.append(-probs.log_prob(action) * advantage)
+                policy_losses.append(-dist.log_prob(action) * advantage)
+                entropy_losses.append(dist.entropy() * self.entropy_factor)
                 value_losses.append(F.smooth_l1_loss(T.tensor(value, device=self.device, dtype=T.float32),
                                                      T.tensor(R, device=self.device, dtype=T.float32)))
 
-            loss = T.stack(policy_losses).sum() + T.stack(value_losses).sum()
+            loss = T.stack(policy_losses).sum() + T.stack(value_losses).sum() + T.stack(entropy_losses).sum()
             loss.backward()
             self.optimizer.step()
             self.transitions.clear()
