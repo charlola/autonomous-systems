@@ -45,14 +45,17 @@ def episode(env, agent, nr_episode, hyperparams, writer):
 
 if __name__ == "__main__":
     # load environment
-    if domain is "wurmi":
+    if domain == "wurmi":
         env = worm.load_env(no_graphics=no_graphics)
-    elif domain is 'car':
+    elif domain == 'car':
         env = gym.make('MountainCarContinuous-v0')
-    elif domain is 'lunar':
+    elif domain == 'lunar':
         env = gym.make('LunarLander-v2')
-    else:
+    elif domain == 'pendel':
         env = gym.make('Pendulum-v0')
+    else:
+        print("Choose correct Environment! wurmi | car | lunar | pendel")
+        exit(-1)
 
     params = {
         "learn": learn,

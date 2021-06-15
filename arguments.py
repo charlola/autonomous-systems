@@ -16,9 +16,9 @@ def collect():
     parser.add_argument("--checkpoint",
                         help="Enter the path to the checkpoint you want to start from. Make sure it fits your Environment!",
                         type=str)
-    parser.add_argument("--learn", help="Enter True for Training mode", type=bool)
+    parser.add_argument("--learn", help="Enter True for Training mode", type=str2bool)
     parser.add_argument("--check_step", help="The amount of Episodes when a checkpoint will be created", type=int)
-    parser.add_argument("--no_graphics", help="True or false", type=bool)
+    parser.add_argument("--no_graphics", help="True or false", type=str2bool)
     parser.add_argument("--episodes", help="Set amnt. of Episodes", type=int)
     parser.add_argument('--file', help="Enter path to a file containing arguments.(--file args.txt)", type=open,
                         action=LoadFromFile)
@@ -32,9 +32,9 @@ def get_trailing_number(s):
 
 def get_domain():
     args = collect()
-    if args.domain:
-        return args.domain
-    return "wurmi"
+    if args.domain is None:
+        return "wurmi"
+    return args.domain
 
 
 def get_checkpoint_dir(domain, dir=""):
@@ -97,30 +97,30 @@ def remove_best(checkpoint_dir):
 
 def get_check_step():
     args = collect()
-    if args.check_step:
-        return args.check_step
-    return 500
+    if args.check_step is None:
+        return 500
+    return args.check_step
 
 
 def get_learn():
     args = collect()
-    if args.learn:
-        return args.learn
-    return True
+    if args.learn is None:
+        return True
+    return args.learn
 
 
 def get_no_graphics():
     args = collect()
-    if args.no_graphics:
-        return args.no_graphics
-    return True
+    if args.no_graphics is None:
+        return True
+    return args.no_graphics
 
 
 def get_episodes():
     args = collect()
-    if args.episodes:
-        return args.episodes
-    return 1000
+    if args.episodes is None:
+        return 1000
+    return args.episodes
 
 
 def get_save_model(domain, last_episode, dir="", is_best=False):
