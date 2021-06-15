@@ -65,7 +65,7 @@ def get_checkpoint_model(dir="", best=False):
             else:
                 start = get_trailing_number(checkpoint_path.replace(".nn", ""))
             checkpoint_dir = os.path.dirname(checkpoint_path) + "\\"
-            return checkpoint_path, checkpoint_dir, start, True
+            return checkpoint_path, start, True
         else:
             print("Error reading Checkpoint-File '", checkpoint_path, "'")
             exit(-1)
