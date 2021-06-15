@@ -24,7 +24,6 @@ def signal_handler(sig, frame):
     agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir))
     sys.exit(0)
 
-
 def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
     discounted_return = 0
@@ -53,10 +52,8 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         writer.add_scalar('Loss/epoch', loss_item, nr_episode)
         writer.add_scalar('Entropy/epoch', entropy_item, nr_episode)
         writer.add_graph(agent.a2c_net, T.tensor(states, device=agent.device, dtype=T.float32))
-    # print(nr_episode, ":", discounted_return)
     string_format = "{:0>3d}: R {:^16.10f} \tL {:^16.10f} \tE {:^16.10f}"
     print(string_format.format(nr_episode, discounted_return, loss_item, entropy_item))
-    # print(nr_episode, ":", "R", discounted_return, "\tL", loss_item, "\tE", entropy_item)
 
     return discounted_return
 
@@ -91,8 +88,8 @@ if __name__ == "__main__":
         "alpha": 0.001,
         "discount_factor": 0.99,
         "nr_hidden_units": 64,
-        "entropy_factor": 0.01,
-        "advantage": "RL",
+        "entropy_factor": 0.05,
+        "advantage": "TD",
     }
 
     # create TensorBoard Writer
