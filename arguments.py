@@ -12,7 +12,7 @@ def str2bool(str):
 
 def collect():
     parser = argparse.ArgumentParser(description='Setup your Environment.')
-    parser.add_argument("--domain", help="Enter 'wurmi' or 'car'. Wurmi is default", type=str)
+    parser.add_argument("--domain", help="Enter 'wurmi','car', 'pendel' or 'lunar'. Wurmi is default", type=str)
     parser.add_argument("--checkpoint",
                         help="Enter the path to the checkpoint you want to start from. Make sure it fits your Environment!",
                         type=str)
@@ -20,7 +20,8 @@ def collect():
     parser.add_argument("--check_step", help="The amount of Episodes when a checkpoint will be created", type=int)
     parser.add_argument("--no_graphics", help="True or false", type=bool)
     parser.add_argument("--episodes", help="Set amnt. of Episodes", type=int)
-    parser.add_argument('--file', help="Enter path to a file containing arguments.(--file args.txt)", type=open, action=LoadFromFile)
+    parser.add_argument('--file', help="Enter path to a file containing arguments.(--file args.txt)", type=open,
+                        action=LoadFromFile)
     return parser.parse_args()
 
 
@@ -36,9 +37,20 @@ def get_domain():
     return "wurmi"
 
 
-def get_checkpoint_path():
-    """
+def get_checkpoint_dir(domain, dir=""):
+    if not dir:
+        cur_time = datetime.now()
+        checkpoint_dir = "models\\" + domain + "_" + str(cur_time.day) + str(cur_time.month) + str(cur_time.year)[:2] + \
+                         "-" + str(cur_time.hour) + "_" + str(cur_time.minute) + "\\"
+        if not os.path.isdir(checkpoint_dir):
+            os.mkdir(checkpoint_dir)
+        return checkpoint_dir
+    else:
+        return dir
 
+
+def get_checkpoint_model(dir="", best=False):
+    """
     :return: Path to checkpoint file, Path to checkpoint dir, Number of last Episode
     """
     args = collect()
@@ -54,19 +66,26 @@ def get_checkpoint_path():
         else:
             print("Error reading Checkpoint-File '", checkpoint_path, "'")
             exit(-1)
-    else:
-        # Create new checkpoint file
-        cur_time = datetime.now()
+    elif dir:
         domain = get_domain()
-        checkpoint_dir = "models\\" + domain + "_" + str(cur_time.day) + str(cur_time.month) + str(cur_time.year)[:2] + \
-                         "-" + str(cur_time.hour) + "_" + str(cur_time.minute) + "\\"
+        checkpoint_dir = dir
         if not os.path.isdir(checkpoint_dir):
             os.mkdir(checkpoint_dir)
-        return checkpoint_dir + domain + ".nn", checkpoint_dir, 0, False
+        if best:
+            return checkpoint_dir + domain + "_best.nn", 0, False
+        else:
+            return checkpoint_dir + domain + ".nn", 0, False
+
+    else:
+        # Create new checkpoint file
+        domain = get_domain()
+        checkpoint_dir = get_checkpoint_dir(domain)
+        if not os.path.isdir(checkpoint_dir):
+            os.mkdir(checkpoint_dir)
+        return checkpoint_dir + domain + ".nn", 0, False
 
 
-def remove_best():
-    _, checkpoint_dir, _, _ = get_checkpoint_path()
+def remove_best(checkpoint_dir):
     test = os.listdir(checkpoint_dir)
     for item in test:
         if item.endswith("_best.nn"):
@@ -101,9 +120,8 @@ def get_episodes():
     return 1000
 
 
-def get_save_model(last_episode, is_best=False):
-    domain = get_domain()
-    _, dir, _, _ = get_checkpoint_path()
+def get_save_model(domain, last_episode, dir="", is_best=False):
+    dir = get_checkpoint_dir(domain, dir)
     return dir + domain + "-" + str(last_episode) + ("_best.nn" if is_best else ".nn")
 
 
