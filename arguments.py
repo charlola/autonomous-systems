@@ -12,7 +12,7 @@ def str2bool(str):
 
 def collect():
     parser = argparse.ArgumentParser(description='Setup your Environment.')
-    parser.add_argument("--domain", help="Enter 'wurmi','car', 'pendel' or 'lunar'. Wurmi is default", type=str)
+    parser.add_argument("--domain", help="Enter 'wurmi', 'car', 'pendel' or 'lunar'. Wurmi is default", type=str)
     parser.add_argument("--checkpoint",
                         help="Enter the path to the checkpoint you want to start from. Make sure it fits your Environment!",
                         type=str)
@@ -38,7 +38,10 @@ def get_domain():
 
 
 def get_checkpoint_dir(domain, dir=""):
-    if not dir:
+    args = collect()
+    if args.checkpoint:
+        return os.path.dirname(args.checkpoint) + "\\"
+    elif not dir:
         cur_time = datetime.now()
         checkpoint_dir = "models\\" + domain + "_" + str(cur_time.day) + str(cur_time.month) + str(cur_time.year)[:2] + \
                          "-" + str(cur_time.hour) + "_" + str(cur_time.minute) + "\\"
