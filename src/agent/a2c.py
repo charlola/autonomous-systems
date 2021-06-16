@@ -146,7 +146,7 @@ class A2CAgent(Agent):
             entropy_loss = T.stack(entropy_losses).mean()
             value_loss = T.stack(value_losses).mean()
             #value_loss = self.calc_value_loss(state_values, rewards)
-            loss = policy_loss + value_loss + entropy_loss
+            loss = policy_loss + value_loss - entropy_loss
             loss.backward()
 
             self.optimizer.step()
