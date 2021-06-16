@@ -55,7 +55,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         writer.add_scalar('Loss/epoch', loss_item, nr_episode)
         writer.add_scalar('Entropy/epoch', entropy_item, nr_episode)
         writer.add_graph(agent.a2c_net, T.tensor(states, device=agent.device, dtype=T.float32))
-    string_format = "{:0>3d}: R {:^16.10f} \tE {:^16.10f} \tL {:^16.10f} \tPL {:^16.1f} \tEL {:^16.1f} \tVL {:^16.1f}"
+    string_format = "{:0>3d}: R {:^16.4f} \tE {:^16.4f} \tL {:^16.4f} \tPL {:^16.4f} \tEL {:^16.4f} \tVL {:^16.4f}"
     print(string_format.format(nr_episode, discounted_return, entropy_item , loss_item, policy_loss, entropy_loss, value_loss))
 
     return discounted_return
@@ -91,8 +91,8 @@ if __name__ == "__main__":
         "alpha": 0.001,
         "discount_factor": 0.99,
         "nr_hidden_units": 64,
-        "entropy_factor": 0.05,
-        "advantage": "TD",
+        "entropy_factor": 0.001,
+        "advantage": "RL",
     }
 
     # create TensorBoard Writer

@@ -1,7 +1,9 @@
+import math
 import os
 
 import numpy as np
 import numpy.random
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
@@ -74,7 +76,7 @@ class A2CAgent(Agent):
         dist = T.distributions.Normal(mu, sigma)
         action = dist.sample()
         action = T.flatten(action)
-        action = T.clip(action, -0.99, 1)
+        action = T.clip(action, -1, 1)
         return action.data.cpu().numpy(), dist.entropy()
 
     def calculate_discounted_reward(self, rewards):
@@ -87,7 +89,7 @@ class A2CAgent(Agent):
         return discounted_returns
 
     def advantage_temporal_difference(self, reward, value, next_value):
-        return reward.item() + self.gamma * next_value.item() - value.item()
+        return reward + self.gamma * next_value - value
 
     def advantage_r_l(self, R, value):
         return R - value
@@ -97,11 +99,15 @@ class A2CAgent(Agent):
         elif self.advantage == "RL": return self.advantage_r_l(R, value)
         return self.advantage_r_l()
 
-    def calc_policy_loss(self, dist, action, advantage):
-        return -dist.log_prob(action) * advantage
+    def calc_policy_loss(self, mu_v, sig_v, action_v, advantage):
+        #return -dist.log_prob(action) * advantage
+        p1 = -((mu_v - action_v) ** 2) / (2 * sig_v.clamp(min=1e-3))
+        p2 = -T.log(torch.sqrt(2 * math.pi * sig_v))
+        return (p1 + p2) * advantage
 
-    def calc_entropy_loss(self, dist):
-        return dist.entropy() * self.entropy_factor
+    def calc_entropy_loss(self, sig_v):
+        # return dist.entropy() * self.entropy_factor
+        return self.entropy_factor * (-(T.log(2*math.pi*sig_v) + 1)/2)
 
     def calc_value_loss(self, values, reward):
         return T.nn.MSELoss()(values.squeeze(-1), reward)
@@ -135,18 +141,19 @@ class A2CAgent(Agent):
             value_losses = []
             entropy_losses = []
 
-            for dist, action, value, next_value, R, reward in zip(action_distributions, actions, state_values,
+            for mu_v, sig_v, dist, action, value, next_value, R, reward in zip(action_mus, action_sigs, action_distributions, actions, state_values,
                                                                   next_state_values, normalized_returns, rewards):
                 advantage = self.get_advantage(R, reward, value, next_value)
-                policy_losses.append(self.calc_policy_loss(dist, action, advantage))
-                entropy_losses.append(self.calc_entropy_loss(dist))
+                # policy_losses.append(self.calc_policy_loss(dist, action, advantage))
+                policy_losses.append(self.calc_policy_loss(mu_v, sig_v, actions, advantage))
+                # entropy_losses.append(self.calc_entropy_loss(dist))
+                entropy_losses.append(self.calc_entropy_loss(sig_v))
                 value_losses.append(self.calc_value_loss(value, reward))
 
             policy_loss = T.stack(policy_losses).mean()
             entropy_loss = T.stack(entropy_losses).mean()
             value_loss = T.stack(value_losses).mean()
-            #value_loss = self.calc_value_loss(state_values, rewards)
-            loss = policy_loss + value_loss - entropy_loss
+            loss = policy_loss + value_loss + entropy_loss
             loss.backward()
 
             self.optimizer.step()
