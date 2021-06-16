@@ -28,6 +28,9 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
     discounted_return = 0
     loss = 0
+    policy_loss = 0
+    entropy_loss = 0
+    value_loss = 0
     entropy = 0
     done = False
     time_step = 0
@@ -39,7 +42,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
-        if params['learn']: loss = agent.update(state, action, reward, next_state, done)
+        if params['learn']: loss, policy_loss, value_loss, entropy_loss = agent.update(state, action, reward, next_state, done)
         states.append(state)
         state = next_state
         discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
@@ -52,8 +55,8 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         writer.add_scalar('Loss/epoch', loss_item, nr_episode)
         writer.add_scalar('Entropy/epoch', entropy_item, nr_episode)
         writer.add_graph(agent.a2c_net, T.tensor(states, device=agent.device, dtype=T.float32))
-    string_format = "{:0>3d}: R {:^16.10f} \tL {:^16.10f} \tE {:^16.10f}"
-    print(string_format.format(nr_episode, discounted_return, loss_item, entropy_item))
+    string_format = "{:0>3d}: R {:^16.10f} \tE {:^16.10f} \tL {:^16.10f} \tPL {:^16.1f} \tEL {:^16.1f} \tVL {:^16.1f}"
+    print(string_format.format(nr_episode, discounted_return, entropy_item , loss_item, policy_loss, entropy_loss, value_loss))
 
     return discounted_return
 

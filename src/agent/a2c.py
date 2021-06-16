@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import numpy.random
 import torch.nn as nn
 import torch.nn.functional as F
@@ -102,14 +103,15 @@ class A2CAgent(Agent):
     def calc_entropy_loss(self, dist):
         return dist.entropy() * self.entropy_factor
 
-    def calc_value_loss(self, advantage):
-        return advantage ** 2
-        #rewards_t = T.tensor([r * self.gamma ** i for i, r in enumerate(reversed(rewards))], device=self.device)
-        #return T.nn.MSELoss()(values.squeeze(-1), rewards_t)
+    def calc_value_loss(self, values, reward):
+        return T.nn.MSELoss()(values.squeeze(-1), reward)
 
     def update(self, state, action, reward, next_state, done):
         self.transitions.append((state, action, reward, next_state, done))
         loss = None
+        policy_loss = None
+        entropy_loss = None
+        value_loss = None
         if done:
             self.optimizer.zero_grad()
             states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
@@ -138,16 +140,16 @@ class A2CAgent(Agent):
                 advantage = self.get_advantage(R, reward, value, next_value)
                 policy_losses.append(self.calc_policy_loss(dist, action, advantage))
                 entropy_losses.append(self.calc_entropy_loss(dist))
-                value_losses.append(self.calc_value_loss(T.tensor(advantage, device=self.device, dtype=T.float32)))
+                value_losses.append(self.calc_value_loss(value, reward))
 
-            policy_loss = T.stack(policy_losses).sum()
-            entropy_loss = T.stack(entropy_losses).sum()
-            value_loss = T.stack(value_losses).sum()
+            policy_loss = T.stack(policy_losses).mean()
+            entropy_loss = T.stack(entropy_losses).mean()
+            value_loss = T.stack(value_losses).mean()
             #value_loss = self.calc_value_loss(state_values, rewards)
-            loss = policy_loss + value_loss - entropy_loss
+            loss = policy_loss + value_loss + entropy_loss
             loss.backward()
 
             self.optimizer.step()
             self.transitions.clear()
 
-        return loss
+        return loss, policy_loss, value_loss, entropy_loss
