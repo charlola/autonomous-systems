@@ -12,15 +12,18 @@ def str2bool(str):
 
 def collect():
     parser = argparse.ArgumentParser(description='Setup your Environment.')
-    parser.add_argument("--domain", help="Enter 'wurmi', 'car', 'pendel' or 'lunar'. Wurmi is default", type=str)
-    parser.add_argument("--checkpoint",
+    parser.add_argument("-d", "--domain", help="Enter 'wurmi', 'car', 'pendel' or 'lunar'. Wurmi is default",
+                        default="wurmi", type=str)
+    parser.add_argument("-c", "--checkpoint",
                         help="Enter the path to the checkpoint you want to start from. Make sure it fits your Environment!",
                         type=str)
-    parser.add_argument("--learn", help="Enter True for Training mode", type=str2bool)
-    parser.add_argument("--check_step", help="The amount of Episodes when a checkpoint will be created", type=int)
-    parser.add_argument("--no_graphics", help="True or false", type=str2bool)
-    parser.add_argument("--episodes", help="Set amnt. of Episodes", type=int)
-    parser.add_argument('--file', help="Enter path to a file containing arguments.(--file args.txt)", type=open,
+    parser.add_argument("-l", "--learn", help="Enter True for Training mode", default=True, type=str2bool)
+    parser.add_argument("-cs", "--check_step", help="The amount of Episodes when a checkpoint will be created",
+                        default=500, type=int)
+    parser.add_argument("-g", "--no_graphics", help="True or false", default=True, type=str2bool)
+    parser.add_argument("-e", "--episodes", help="Set amnt. of Episodes", default=10000, type=int)
+    parser.add_argument("-f", '--file', help="Enter path to a file containing arguments.(--file args.txt)",
+                        default="args.txt", type=open,
                         action=LoadFromFile)
     return parser.parse_args()
 
@@ -30,17 +33,9 @@ def get_trailing_number(s):
     return int(m.group()) if m else None
 
 
-def get_domain():
-    args = collect()
-    if args.domain is None:
-        return "wurmi"
-    return args.domain
-
-
-def get_checkpoint_dir(domain, dir=""):
-    args = collect()
-    if args.checkpoint:
-        return os.path.dirname(args.checkpoint) + "\\"
+def get_checkpoint_dir(domain, dir="", checkpoint=""):
+    if checkpoint:
+        return os.path.dirname(checkpoint) + "\\"
     elif not dir:
         cur_time = datetime.now()
         checkpoint_dir = "models\\" + domain + "_" + str(cur_time.day) + str(cur_time.month) + str(cur_time.year)[:2] + \
@@ -52,25 +47,22 @@ def get_checkpoint_dir(domain, dir=""):
         return dir
 
 
-def get_checkpoint_model(dir="", best=False):
+def get_checkpoint_model(domain, dir="", best=False, checkpoint=""):
     """
     :return: Path to checkpoint file, Path to checkpoint dir, Number of last Episode
     """
-    args = collect()
-    if args.checkpoint:
-        checkpoint_path = args.checkpoint
-        if os.path.isfile(checkpoint_path):
-            if checkpoint_path.endswith("_best.nn"):
-                start = get_trailing_number(checkpoint_path.replace("_best.nn", ""))
+    if checkpoint:
+        if os.path.isfile(checkpoint):
+            if checkpoint.endswith("_best.nn"):
+                start = get_trailing_number(checkpoint.replace("_best.nn", ""))
             else:
-                start = get_trailing_number(checkpoint_path.replace(".nn", ""))
-            checkpoint_dir = os.path.dirname(checkpoint_path) + "\\"
-            return checkpoint_path, start, True
+                start = get_trailing_number(checkpoint.replace(".nn", ""))
+            checkpoint_dir = os.path.dirname(checkpoint) + "\\"
+            return checkpoint, start, True
         else:
-            print("Error reading Checkpoint-File '", checkpoint_path, "'")
+            print("Error reading Checkpoint-File '", checkpoint, "'")
             exit(-1)
     elif dir:
-        domain = get_domain()
         checkpoint_dir = dir
         if not os.path.isdir(checkpoint_dir):
             os.mkdir(checkpoint_dir)
@@ -81,7 +73,6 @@ def get_checkpoint_model(dir="", best=False):
 
     else:
         # Create new checkpoint file
-        domain = get_domain()
         checkpoint_dir = get_checkpoint_dir(domain)
         if not os.path.isdir(checkpoint_dir):
             os.mkdir(checkpoint_dir)
@@ -93,34 +84,6 @@ def remove_best(checkpoint_dir):
     for item in test:
         if item.endswith("_best.nn"):
             os.remove(os.path.join(checkpoint_dir, item))
-
-
-def get_check_step():
-    args = collect()
-    if args.check_step is None:
-        return 500
-    return args.check_step
-
-
-def get_learn():
-    args = collect()
-    if args.learn is None:
-        return True
-    return args.learn
-
-
-def get_no_graphics():
-    args = collect()
-    if args.no_graphics is None:
-        return True
-    return args.no_graphics
-
-
-def get_episodes():
-    args = collect()
-    if args.episodes is None:
-        return 1000
-    return args.episodes
 
 
 def get_save_model(domain, last_episode, dir="", is_best=False):

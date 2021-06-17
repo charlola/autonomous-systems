@@ -11,18 +11,15 @@ best_result = -9999
 init_count = 0  # is used to make sure, best is not overwritten when model is loaded
 episode_cnt = 0
 # Read Arguments
-domain = arguments.get_domain()
-checkpoint_dir = arguments.get_checkpoint_dir(domain)
-model, start_episode, load_model = arguments.get_checkpoint_model(dir=checkpoint_dir)
-checkpoint_step = arguments.get_check_step()
-no_graphics = arguments.get_no_graphics()
-episodes = arguments.get_episodes()
-learn = arguments.get_learn()
+args = arguments.collect()
+checkpoint_dir = arguments.get_checkpoint_dir(args.domain, checkpoint=args.checkpoint)
+model, start_episode, load_model = arguments.get_checkpoint_model(args.domain, dir=checkpoint_dir, checkpoint=args.checkpoint)
 
 
 def signal_handler(sig, frame):
-    agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir))
+    agent.save(arguments.get_save_model(args.domain, episode_cnt, dir=checkpoint_dir))
     sys.exit(0)
+
 
 def episode(env, agent, nr_episode, hyperparams, writer):
     state = env.reset()
@@ -63,24 +60,24 @@ def episode(env, agent, nr_episode, hyperparams, writer):
 
 if __name__ == "__main__":
     # load environment
-    if domain == "wurmi":
-        env = worm.load_env(no_graphics=no_graphics)
-    elif domain == 'car':
+    if args.domain == "wurmi":
+        env = worm.load_env(no_graphics=args.no_graphics)
+    elif args.domain == 'car':
         env = gym.make('MountainCarContinuous-v0')
-    elif domain == 'lunar':
+    elif args.domain == 'lunar':
         env = gym.make('LunarLander-v2')
-    elif domain == 'pendel':
+    elif args. domain == 'pendel':
         env = gym.make('Pendulum-v0')
     else:
         print("Choose correct Environment! wurmi | car | lunar | pendel")
         exit(-1)
 
     params = {
-        "learn": learn,
+        "learn": args.learn,
         "model": model,
         "load_model": load_model,
-        "episodes": episodes,
-        "no_graphics": no_graphics,
+        "episodes": args.episodes,
+        "no_graphics": args.no_graphics,
         "nr_input_features": env.observation_space.shape[0],
         "nr_actions": env.action_space.shape[0],
     }
@@ -107,18 +104,18 @@ if __name__ == "__main__":
     try:
         for episode_cnt in range(start_episode, params["episodes"] + 1):
             results = episode(env, agent, episode_cnt, hyperparams, writer)
-            if learn:
+            if args.learn:
                 if results > best_result:
                     best_result = results
                     arguments.remove_best(checkpoint_dir)
                     if init_count > 10:
-                        agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir, is_best=True))
-                if episode_cnt != 0 and episode_cnt % checkpoint_step == 0:
-                    agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir))
+                        agent.save(arguments.get_save_model(args.domain, episode_cnt, dir=checkpoint_dir, is_best=True))
+                if episode_cnt != 0 and episode_cnt % args.check_step == 0:
+                    agent.save(arguments.get_save_model(args.domain, episode_cnt, dir=checkpoint_dir))
             init_count += 1
     finally:
-        if learn:
-            agent.save(arguments.get_save_model(domain, episode_cnt, dir=checkpoint_dir))
+        if args.learn:
+            agent.save(arguments.get_save_model(args.domain, episode_cnt, dir=checkpoint_dir))
         if writer is not None:
             writer.flush()
 
