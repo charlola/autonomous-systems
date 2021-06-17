@@ -1,4 +1,4 @@
-from src.agent.agent import Agent
+from src.a2c.agent import Agent
 import torch
 import numpy as np
 

@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.distributions import Categorical
-from src.agent.agent import Agent
+from src.a2c.agent import Agent
 import torch as T
 
 

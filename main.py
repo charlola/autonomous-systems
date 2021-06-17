@@ -3,7 +3,7 @@ import signal
 import sys
 import arguments
 from src.environment import worm
-from src.agent.a2c import A2CAgent
+from src.a2c.a2c import A2CAgent
 import torch as T
 from torch.utils.tensorboard import SummaryWriter
 
@@ -85,15 +85,6 @@ if __name__ == "__main__":
         "nr_actions": env.action_space.shape[0],
     }
 
-    # define hyperparameter
-    hyperparams = {
-        "gamma": 0.99,
-        "alpha": 0.001,
-        "discount_factor": 0.99,
-        "nr_hidden_units": 64,
-        "entropy_factor": 0.001,
-        "advantage": "RL",
-    }
 
     # create TensorBoard Writer
     # writer = SummaryWriter()
