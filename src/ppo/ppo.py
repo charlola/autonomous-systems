@@ -176,7 +176,8 @@ class PPOAgent(Agent):
         return critic_loss * self.critic_discount
 
     def get_noise(self, entropy):
-        # eventuell wie epsilon decay noise_factor reduzieren --> Check
-        if self.noise_factor > self.noise_min:
-            self.noise_factor *= self.noise_decay
+        if self.noise_factor == 0:
+            return entropy
+            if self.noise_factor > self.noise_min:
+                self.noise_factor *= self.noise_decay
         return entropy * self.noise_factor

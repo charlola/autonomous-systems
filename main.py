@@ -8,6 +8,7 @@ from ray import tune
 import logger
 from ray.tune.integration.mlflow import mlflow_mixin
 import mlflow
+from ray.tune.stopper import ExperimentPlateauStopper
 
 def episode(env, agent, nr_episode, hyperparams):
     state = env.reset()
@@ -50,9 +51,11 @@ def trainable(config):
     try:
         for i in range(args.episodes):
             score = episode(env, agent, i, config)
+            mlflow.log_metric(key="score", value=score, step=i)
             if running_reward is None:
                 running_reward = score
             running_reward = running_reward * 0.9 + score * 0.1
+            mlflow.log_metric(key="running_reward", value=running_reward, step=i)
             running_rewards.append(running_reward)
             returns.append(score)
     except KeyboardInterrupt:
@@ -61,23 +64,11 @@ def trainable(config):
         raise e
     finally:
         agent.save(args.model)
-
-    mlflow.log_metric("score", score) # or running reward?
-    mlflow.log_metric("episodes", args.episodes)
-
-    x = range(len(running_rewards))
-    y = running_rewards
-
-    plt.plot(x, y)
-    plt.title("Progress")
-    plt.xlabel("episode")
-    plt.ylabel("undiscounted return")
-    plt.show()
+    tune.report(score=score)  # or running_reward?
 
     # close environment
     env.close()
 
-    tune.report(score=score) # or running_reward?
 
 
 if __name__ == "__main__":
@@ -88,7 +79,9 @@ if __name__ == "__main__":
     analysis = tune.run(
         trainable,
         config=hyperparams,
+        stop=ExperimentPlateauStopper(metric="score", std=0.1, top=2, mode='max', patience=0)
     )
 
     df = analysis.results_df
-    logger.info("Best config:{}".format(analysis.get_best_config(metric="score", mode='max')))
+    print("Best config:{}".format(analysis.get_best_config(metric="score", mode='max')))
+
