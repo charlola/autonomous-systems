@@ -63,3 +63,5 @@ Assets/Ml-Agents/Examples/Worm/Scenes WormDynamicTarget.unity öffnen und auf Pl
 
 Done!
 
+For recording with Tensorboard
+> tensorboard dev upload --logdir = runs
