@@ -13,6 +13,7 @@ Use this class to create plots from csv files from tensorboard
 parser = argparse.ArgumentParser(description='Setup your Environment.')
 parser.add_argument("-f", "--folder", help="Enter folder, where plots are", type=str)
 parser.add_argument("-s", "--sigma", help="Enter smoothing factor sigma. Default 1 not smooth. 2 smoother", default=1, type=int)
+parser.add_argument("-d", "--destination", help="Enter, where plot will be saved.", default="plots\\plot.png", type=str)
 args = parser.parse_args()
 
 plt.figure(figsize=(19,10))
@@ -53,4 +54,5 @@ if os.path.isdir(folder):
     axes.set_ylim([-1, 8])
     plt.xlabel("Episodes")
     plt.ylabel("Loss")
+    plt.savefig(args.destination)
     plt.show()
