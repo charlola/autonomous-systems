@@ -13,7 +13,7 @@ Use this class to create plots from csv files from tensorboard
 parser = argparse.ArgumentParser(description='Setup your Environment.')
 parser.add_argument("-f", "--folder", help="Enter folder, where plots are", type=str)
 parser.add_argument("-s", "--sigma", help="Enter smoothing factor sigma. Default 1 not smooth. 2 smoother", default=1, type=int)
-parser.add_argument("-d", "--destination", help="Enter, where plot will be saved.", default="plot", type=str)
+parser.add_argument("-n", "--name", help="Name the plot.", default="plot", type=str)
 args = parser.parse_args()
 
 plt.figure(figsize=(19,10))
@@ -56,7 +56,7 @@ if os.path.isdir(folder):
     axes.set_ylim([-1, 8])
     plt.xlabel("Episodes")
     plt.ylabel("Loss")
-    plt.savefig("plots\\" + args.destination + ".png")
+    plt.savefig("plots\\" + args.name + "_losses.png")
     plt.show()
     plt.close()
     for file in files:
@@ -74,7 +74,7 @@ if os.path.isdir(folder):
                 axes.set_ylim([min(vals)-0.1, max(vals)+0.1])
                 plt.xlabel("Episodes")
                 plt.ylabel("Entropy")
-                plt.savefig("plots\\" + args.destination + "_entropy.png")
+                plt.savefig("plots\\" + args.name + "_entropy.png")
                 plt.show()
                 plt.close()
             if "Discounted Return" in file:
@@ -90,7 +90,7 @@ if os.path.isdir(folder):
                 axes.set_ylim([min(vals)-10, max(vals)+10])
                 plt.xlabel("Episodes")
                 plt.ylabel("Value")
-                plt.savefig("plots\\" + args.destination + "_discReturn.png")
+                plt.savefig("plots\\" + args.name + "_discReturn.png")
                 plt.show()
                 plt.close()
 
