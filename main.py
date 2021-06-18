@@ -87,9 +87,9 @@ if __name__ == "__main__":
         "gamma": 0.99,
         "alpha": 0.001,
         "discount_factor": 0.99,
-        "nr_hidden_units": 64,
-        "entropy_factor": 0.001,
-        "advantage": "RL",
+        "nr_hidden_units": 2**3,
+        "entropy_factor": 0.01,
+        "advantage": "TD",
     }
 
     # create TensorBoard Writer

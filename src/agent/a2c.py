@@ -89,7 +89,8 @@ class A2CAgent(Agent):
         return discounted_returns
 
     def advantage_temporal_difference(self, reward, value, next_value):
-        return reward + self.gamma * next_value - value
+        td_error = reward + self.gamma * next_value
+        return td_error - value
 
     def advantage_r_l(self, R, value):
         return R - value
@@ -100,9 +101,8 @@ class A2CAgent(Agent):
         return self.advantage_r_l()
 
     def calc_policy_loss(self, mu_v, sig_v, action_v, advantage):
-        #return -dist.log_prob(action) * advantage
-        p1 = -((mu_v - action_v) ** 2) / (2 * sig_v.clamp(min=1e-3))
-        p2 = -T.log(torch.sqrt(2 * math.pi * sig_v))
+        p1 = -((action_v - mu_v) ** 2) / (2 * sig_v**2)
+        p2 = -T.log(torch.sqrt(2 * math.pi * sig_v**2))
         return (p1 + p2) * advantage
 
     def calc_entropy_loss(self, sig_v):
