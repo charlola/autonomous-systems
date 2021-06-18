@@ -20,11 +20,15 @@ plt.figure(figsize=(19,10))
 folder = args.folder
 if os.path.isdir(folder):
     files = os.listdir(folder)
+    max_y = 0
+    min_y = 1000
     for file in files:
         if "Value Loss" in file:
             value_loss = pd.read_csv(folder + "\\" + file, index_col=1)
             vals = [i[1] for i in value_loss.values]
             vals = gaussian_filter1d(vals, sigma=args.sigma)
+            if max(vals) > max_y: max_y = max(vals) + 1
+            if min(vals) < min_y: min_y = min(vals) - 1
             index = value_loss.index
             value_loss = pd.DataFrame(data=vals, index=index)
             plt.plot(value_loss, label="Value_Loss")
@@ -32,6 +36,8 @@ if os.path.isdir(folder):
             entropy_loss = pd.read_csv(folder + "\\" + file, index_col=1)
             vals = [i[1] for i in entropy_loss.values]
             vals = gaussian_filter1d(vals, sigma=args.sigma)
+            if max(vals) > max_y: max_y = max(vals) + 1
+            if min(vals) < min_y: min_y = min(vals) - 1
             index = entropy_loss.index
             entropy_loss = pd.DataFrame(data=vals, index=index)
             plt.plot(entropy_loss, label="Entropy_Loss")
@@ -39,6 +45,8 @@ if os.path.isdir(folder):
             policy_loss = pd.read_csv(folder + "\\" + file, index_col=1)
             vals = [i[1] for i in policy_loss.values]
             vals = gaussian_filter1d(vals, sigma=args.sigma)
+            if max(vals) > max_y: max_y = max(vals) + 1
+            if min(vals) < min_y: min_y = min(vals) - 1
             index = policy_loss.index
             policy_loss = pd.DataFrame(data=vals, index=index)
             plt.plot(policy_loss, label="Policy_Loss")
@@ -48,12 +56,14 @@ if os.path.isdir(folder):
             episode_loss = pd.read_csv(folder + "\\" + file, index_col=1)
             vals = [i[1] for i in episode_loss.values]
             vals = gaussian_filter1d(vals, sigma=args.sigma)
+            if max(vals) > max_y: max_y = max(vals) + 1
+            if min(vals) < min_y: min_y = min(vals) - 1
             index = episode_loss.index
             episode_loss = pd.DataFrame(data=vals, index=index)
             plt.plot(episode_loss, label="Episode_Loss")
     plt.legend(loc="upper left")
     axes = plt.gca()
-    axes.set_ylim([-1, 8])
+    axes.set_ylim([min_y, max_y])
     plt.xlabel("Episodes")
     plt.ylabel("Loss")
     plt.savefig("plots\\" + args.name + "_losses.png")
