@@ -46,7 +46,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         time_step += 1
 
     loss_item = loss.item()
-    entropy_item = T.flatten(entropy).item()
+    entropy_item = T.flatten(entropy).mean().item()
     if writer is not None:
         writer.add_scalar('Discounted Return/epoch', discounted_return, nr_episode)
         writer.add_scalar('Loss/epoch', loss_item, nr_episode)
@@ -65,7 +65,8 @@ if __name__ == "__main__":
     elif args.domain == 'car':
         env = gym.make('MountainCarContinuous-v0')
     elif args.domain == 'lunar':
-        env = gym.make('LunarLander-v2')
+        env = gym.make('LunarLanderContinuous-v2')
+        #env.env.continuous = True
     elif args. domain == 'pendel':
         env = gym.make('Pendulum-v0')
     else:
