@@ -45,15 +45,21 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
         time_step += 1
 
-    loss_item = loss.item()
+    loss = loss.item()
     entropy_item = T.flatten(entropy).mean().item()
     if writer is not None:
         writer.add_scalar('Discounted Return/epoch', discounted_return, nr_episode)
-        writer.add_scalar('Loss/epoch', loss_item, nr_episode)
         writer.add_scalar('Entropy/epoch', entropy_item, nr_episode)
+        # discounted return, Entropy,  loss + teilkomponennten
+        writer.add_scalars(f'loss/episode', {
+            'Loss': loss,
+            'Policy Loss': policy_loss,
+            'Entropy Loss': entropy_loss,
+            'Value Loss': value_loss
+        }, nr_episode)
         writer.add_graph(agent.a2c_net, T.tensor(states, device=agent.device, dtype=T.float32))
     string_format = "{:0>3d}: R {:^16.4f} \tE {:^16.4f} \tL {:^16.4f} \tPL {:^16.4f} \tEL {:^16.4f} \tVL {:^16.4f}"
-    print(string_format.format(nr_episode, discounted_return, entropy_item , loss_item, policy_loss, entropy_loss, value_loss))
+    print(string_format.format(nr_episode, discounted_return, entropy_item, loss, policy_loss, entropy_loss, value_loss))
 
     return discounted_return
 
@@ -86,16 +92,16 @@ if __name__ == "__main__":
     # define hyperparameter
     hyperparams = {
         "gamma": 0.99,
-        "alpha": 0.001,
+        "alpha": 10**-3,
         "discount_factor": 0.99,
         "nr_hidden_units": 2**3,
-        "entropy_factor": 0.01,
+        "entropy_factor": 10**-1,
         "advantage": "TD",
     }
 
     # create TensorBoard Writer
-    # writer = SummaryWriter()
-    writer = None
+    writer = SummaryWriter()
+    # writer = None
 
     signal.signal(signal.SIGINT, signal_handler)
     # create agent
