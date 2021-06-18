@@ -13,7 +13,7 @@ Use this class to create plots from csv files from tensorboard
 parser = argparse.ArgumentParser(description='Setup your Environment.')
 parser.add_argument("-f", "--folder", help="Enter folder, where plots are", type=str)
 parser.add_argument("-s", "--sigma", help="Enter smoothing factor sigma. Default 1 not smooth. 2 smoother", default=1, type=int)
-parser.add_argument("-d", "--destination", help="Enter, where plot will be saved.", default="plots\\plot.png", type=str)
+parser.add_argument("-d", "--destination", help="Enter, where plot will be saved.", default="plot", type=str)
 args = parser.parse_args()
 
 plt.figure(figsize=(19,10))
@@ -43,6 +43,8 @@ if os.path.isdir(folder):
             policy_loss = pd.DataFrame(data=vals, index=index)
             plt.plot(policy_loss, label="Policy_Loss")
         else:
+            if not "loss" in file:
+                continue
             episode_loss = pd.read_csv(folder + "\\" + file, index_col=1)
             vals = [i[1] for i in episode_loss.values]
             vals = gaussian_filter1d(vals, sigma=args.sigma)
@@ -54,5 +56,42 @@ if os.path.isdir(folder):
     axes.set_ylim([-1, 8])
     plt.xlabel("Episodes")
     plt.ylabel("Loss")
-    plt.savefig(args.destination)
+    plt.savefig("plots\\" + args.destination + ".png")
     plt.show()
+    plt.close()
+    for file in files:
+        if not "loss" in file:
+            if "Entropy" in file:
+                plt.figure(figsize=(19,10))
+                entropy = pd.read_csv(folder + "\\" + file, index_col=1)
+                vals = [i[1] for i in entropy.values]
+                vals = gaussian_filter1d(vals, sigma=args.sigma)
+                index = entropy.index
+                entropy = pd.DataFrame(data=vals, index=index)
+                plt.plot(entropy, label="Entropy")
+                plt.legend(loc="upper left")
+                axes = plt.gca()
+                axes.set_ylim([min(vals)-0.1, max(vals)+0.1])
+                plt.xlabel("Episodes")
+                plt.ylabel("Entropy")
+                plt.savefig("plots\\" + args.destination + "_entropy.png")
+                plt.show()
+                plt.close()
+            if "Discounted Return" in file:
+                plt.figure(figsize=(19,10))
+                disc_return = pd.read_csv(folder + "\\" + file, index_col=1)
+                vals = [i[1] for i in disc_return.values]
+                vals = gaussian_filter1d(vals, sigma=args.sigma)
+                index = disc_return.index
+                disc_return = pd.DataFrame(data=vals, index=index)
+                plt.plot(disc_return, label="Discounted Return")
+                plt.legend(loc="upper left")
+                axes = plt.gca()
+                axes.set_ylim([min(vals)-10, max(vals)+10])
+                plt.xlabel("Episodes")
+                plt.ylabel("Value")
+                plt.savefig("plots\\" + args.destination + "_discReturn.png")
+                plt.show()
+                plt.close()
+
+
