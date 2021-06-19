@@ -1,98 +1,128 @@
-from src.environment import worm
-from src.agent.a2c import A2CAgent
-from src.ppo.ppo import PPOAgent
-from src.ppo.config import hyperparams
-from src import arguments
-import matplotlib.pyplot as plt
+import argparse
+import os
+
+import ray
 from ray import tune
-import logger
-from ray.tune.integration.mlflow import mlflow_mixin
-import mlflow
-from ray.tune.stopper import ExperimentPlateauStopper
-
-def episode(env, agent, nr_episode, hyperparams):
-    state = env.reset()
-    discounted_return = 0
-    done = False
-    time_step = 0
-    while not done:
-        if args.graphics:
-            env.render()
-        # 1. Select action according to policy
-        action = agent.policy(state)
-        # 2. Execute selected action
-        next_state, reward, done, _ = env.step(action)
-        # 3. Integrate new experience into agent
-        trajectory_size, step_size = agent.update_part_1(state, reward, next_state)
-        if trajectory_size == step_size:
-            loss, actor_loss, critic_loss, entropy = agent.update_part_2(done)
-        state = next_state
-        discounted_return += (hyperparams["gamma"]**time_step)*reward
-        time_step += 1
-    print(nr_episode, ":", discounted_return)
-    return discounted_return, trajectory_size, step_size, loss, actor_loss, critic_loss, entropy,
-
-@mlflow_mixin
-def trainable(config):
-
-    # load environment
-    # env = worm.load_env(no_graphics=not args.graphics)
-    env = worm.create_gym_env()
-    config["env"] = env
-
-    #log params
-    params = {}
-    for key in config.keys():
-        if key != "mlflow":
-            params[key] = config[key]
-    mlflow.log_params(params)
-
-    # create agent
-    agent = PPOAgent(config)
-
-    # define
-    returns = list()
-    running_reward = None
-    running_rewards = list()
-    try:
-        for i in range(args.episodes):
-            score, trajectory_size, step_size, loss, actor_loss, critic_loss, entropy = episode(env, agent, i, config)
-            mlflow.log_metric(key="score", value=score, step=i)
-            if trajectory_size == step_size:
-                mlflow.log_metric(key="loss", value=loss, step=i)
-                mlflow.log_metric(key="actor_loss", value=actor_loss, step=i)
-                mlflow.log_metric(key="critic_loss", value=critic_loss, step=i)
-                mlflow.log_metric(key="entropy", value=entropy, step=i)
-
-            if running_reward is None:
-                running_reward = score
-            running_reward = running_reward * 0.9 + score * 0.1
-            mlflow.log_metric(key="running_reward", value=running_reward, step=i)
-            running_rewards.append(running_reward)
-            returns.append(score)
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        raise e
-    finally:
-        agent.save(args.model)
-    tune.report(score=score)  # or running_reward?
-
-    # close environment
-    env.close()
-
+from ray.rllib.env.wrappers.unity3d_env import Unity3DEnv
+from ray.rllib.utils.test_utils import check_learning_achieved
 
 
 if __name__ == "__main__":
 
-    args = arguments.collect()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--env",
+        type=str,
+        default="Worm",
+        help="The name of the Env to run in the Unity3D editor: `3DBall(Hard)?|"
+             "Pyramids|GridFoodCollector|SoccerStrikersVsGoalie|Sorter|Tennis|"
+             "VisualHallway|Walker` (feel free to add more and PR!)")
+    parser.add_argument(
+        "--file-name",
+        type=str,
+        default="env_single/UnityEnvironment",
+        help="The Unity3d binary (compiled) game, e.g. "
+             "'/home/ubuntu/soccer_strikers_vs_goalie_linux.x86_64'. Use `None` for "
+             "a currently running Unity3D editor.")
+    parser.add_argument(
+        "--from-checkpoint",
+        type=str,
+        default=None,
+        help="Full path to a checkpoint file for restoring a previously saved "
+             "Trainer state.")
+    parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument(
+        "--as-test",
+        action="store_true",
+        help="Whether this script should be run as a test: --stop-reward must "
+             "be achieved within --stop-timesteps AND --stop-iters.")
+    parser.add_argument(
+        "--stop-iters",
+        type=int,
+        default=9999,
+        help="Number of iterations to train.")
+    parser.add_argument(
+        "--stop-timesteps",
+        type=int,
+        default=10000000,
+        help="Number of timesteps to train.")
+    parser.add_argument(
+        "--stop-reward",
+        type=float,
+        default=9999.0,
+        help="Reward at which we stop training.")
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=3000,
+        help="The max. number of `step()`s for any episode (per agent) before "
+             "it'll be reset again automatically.")
+    parser.add_argument(
+        "--framework",
+        choices=["tf", "tf2", "tfe", "torch"],
+        default="tf",
+        help="The DL framework specifier.")
 
+    if __name__ == "__main__":
+        ray.init()
 
-    analysis = tune.run(
-        trainable,
-        config=hyperparams
-    )
+        args = parser.parse_args()
 
-    df = analysis.results_df
-    print("Best config:{}".format(analysis.get_best_config(metric="score", mode='max')))
+        tune.register_env(
+            "unity3d",
+            lambda c: Unity3DEnv(
+                file_name=c["file_name"],
+                no_graphics=True,
+                episode_horizon=c["episode_horizon"],
+            ))
+
+    config = {
+        "env": "unity3d",
+        "env_config": {
+            "file_name": args.file_name,
+            "episode_horizon": args.horizon,
+        },
+        # For running in editor, force to use just one Worker (we only have
+        # one Unity running)!
+        "num_workers": args.num_workers if args.file_name else 0,
+        # Other settings.
+        "lr": 0.0003,
+        "lambda": 0.95,
+        "gamma": 0.99,
+        "sgd_minibatch_size": 256,
+        "train_batch_size": 4000,
+        # Use GPUs iff `RLLIB_NUM_GPUS` env var set to > 0.
+        "num_gpus": int(os.environ.get("RLLIB_NUM_GPUS", "0")),
+        "num_sgd_iter": 20,
+        "rollout_fragment_length": 200,
+        "clip_param": 0.2,
+        "model": {
+            "fcnet_hiddens": [512, 512],
+        },
+        "framework": "tf" if args.env != "Pyramids" else "torch",
+        "no_done_at_end": True,
+    }
+
+    stop = {
+        "training_iteration": args.stop_iters,
+        "timesteps_total": args.stop_timesteps,
+        "episode_reward_mean": args.stop_reward,
+    }
+
+    # Run the experiment.
+    results = tune.run(
+        "PPO",
+        config=config,
+        stop=stop,
+        verbose=1,
+        checkpoint_freq=5,
+        checkpoint_at_end=True,
+        restore=args.from_checkpoint)
+
+    # And check the results.
+    if args.as_test:
+        check_learning_achieved(results, args.stop_reward)
+
+    ray.shutdown()
+
 
