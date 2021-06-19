@@ -59,16 +59,22 @@ class PPOAgent(Agent):
 
         return action
 
-    def update(self, state, action, reward, next_state, done):
+    def update_part_1(self, state, reward, next_state):
         state = torch.tensor(state, dtype=torch.float).to(self.device)
         next_state = torch.tensor(next_state, dtype=torch.float).to(self.device)
 
         # collect states and rewards
         self.trajectory.add_update(state, next_state, reward)
 
+        return self.trajectory.size(), self.step_size
+
+    def update_part_2(self, done):
         # train model if necessary (done or reached step size)
         if done or self.trajectory.size() == self.step_size:
-            self.train()
+            loss, actor_loss, critic_loss, entropy = self.train()
+            return loss, actor_loss, critic_loss, entropy
+        else:
+            pass
 
     def train(self):
         # wrap as tensors
@@ -112,6 +118,8 @@ class PPOAgent(Agent):
 
         # Clear buffer
         self.trajectory.clear()
+
+        return loss, actor_loss, critic_loss, entropy
 
 
     def create_batches(self):
