@@ -44,20 +44,20 @@ class PPOAgent(Agent):
     def policy(self, state):
         """Choose an action based on the actor net"""
 
-        states = torch.tensor([state], device=self.device, dtype=torch.float)
+        states = torch.tensor(state, device=self.device, dtype=torch.float)
 
         #return np.random.rand(9,1)
         action, logprob = self.net_backup.act(states)
 
         # collect action and its probability
         self.trajectory.add_policy(action, logprob)
-
+        
         return action
 
     def update(self, state, action, reward, next_state, done):
         state      = torch.tensor(state,      dtype=torch.float).to(self.device)
         next_state = torch.tensor(next_state, dtype=torch.float).to(self.device)
-
+        
         # collect states and rewards
         self.trajectory.add_update(state, next_state, reward)
 
@@ -67,38 +67,30 @@ class PPOAgent(Agent):
 
     def train(self):
         # wrap as tensors
-        states      = torch.squeeze(torch.stack(self.trajectory.states, dim=0)).detach().to(self.device)
+        states      = torch.squeeze(torch.stack(self.trajectory.states,      dim=0)).detach().to(self.device)
         next_states = torch.squeeze(torch.stack(self.trajectory.next_states, dim=0)).detach().to(self.device)
-        actions     = torch.squeeze(torch.stack(self.trajectory.actions,  dim=0)).detach().to(self.device)
-        logprobs    = torch.squeeze(torch.stack(self.trajectory.logprobs, dim=0)).detach().to(self.device)
+        actions     = torch.squeeze(torch.stack(self.trajectory.actions,     dim=0)).detach().to(self.device)
+        logprobs    = torch.squeeze(torch.stack(self.trajectory.logprobs,    dim=0)).detach().to(self.device)
         
         rewards    = self.normalize_rewards(self.trajectory.rewards)
+        advantages = self.calculate_advantage(rewards, states, next_states)
+        rewards = rewards.unsqueeze(1)
 
         batches = self.create_batches()
 
-        # TODO evtl andere loop sachen 
         for k in range(self.k):
 
-            # Calculate losses
-            actor_losses = []
-            critic_losses = []
-            entropy_losses = []
-
-            for index in batches[k]:
-
-                advantage = self.calculate_advantage(rewards[index], states[index], next_states[index])
+            # Calculate losses            
+            index = batches[k]
+            index = np.arange(self.trajectory.size())
             
-                value, new_logprob, entropy = self.net.collect(states[index], actions[index])
-                
-                actor_loss  = self.get_actor_loss(new_logprob, logprobs[index], advantage)
-                critic_loss = self.get_critic_loss(value, rewards[index])
-                noise       = self.get_noise(entropy)
-
-                actor_losses.append(actor_loss)
-                critic_losses.append(critic_loss)
-                entropy_losses.append(noise)
-
-            loss = torch.stack(actor_losses) + torch.stack(critic_losses) - torch.stack(entropy_losses)
+            values, new_logprobs, entropy = self.net.collect(states[index], actions[index])
+            
+            actor_loss  = self.get_actor_loss(new_logprobs, logprobs[index], advantages[index])
+            critic_loss = self.get_critic_loss(values, rewards[index])
+            noise       = self.get_noise(entropy)
+            
+            loss = actor_loss + critic_loss # - noise
 
             # take gradient step
             self.net.optimize(loss.mean())
@@ -116,7 +108,7 @@ class PPOAgent(Agent):
         batches = list()
         for i in range(self.k):
             batch = arr[self.batch_size*i:self.batch_size*(i+1)]
-            batches.append(batch)
+            batches.append(np.array(batch))
         return batches
 
     def save(self, path):
@@ -126,15 +118,18 @@ class PPOAgent(Agent):
         # REINFORCE
         #return rewards
 
-        Q_values      = self.net_backup.critic(states)
-        advantages    = (rewards - Q_values).detach()
-        return advantages
+        # advantage
+        Q_values   = self.net_backup.critic(states)
+        advantages = rewards - Q_values
+        return advantages.detach()
 
-        # temporal difference 
+        # temporal difference advantage
         Q_values      = self.net_backup.critic(states)
         next_Q_values = self.net_backup.critic(next_states)
+
         advantages    = (rewards + self.gamma * next_Q_values - Q_values).detach()
-        return advantages
+        
+        return advantages.unsqueeze(1)
     
     def normalize_rewards(self, rewards):
         """Normalize rewards"""
@@ -150,17 +145,16 @@ class PPOAgent(Agent):
         disc_returns = torch.tensor(disc_returns, device=self.device, dtype=torch.float32)
         norm_returns = (disc_returns - disc_returns.mean()) / (disc_returns.std() + self.eps)
         
-        return norm_returns.unsqueeze(1)
+        return norm_returns
 
     def get_actor_loss(self, new_logprob, old_logprob, advantage):
         # calculate difference between old and now policy probability
         ratio = torch.exp(new_logprob-old_logprob)
-        
+            
         # TODO !!! min(p1, p2) wenn advantage positiv oder negativ ist dann unterschiedliche wahl ?!
-
         p1 = ratio * advantage
         p2 = ratio.clip(1-self.epsilon, 1+self.epsilon) * advantage
-        actor_loss = -torch.min(p1, p2)
+        actor_loss = -torch.min(p1, p2)#.mean()
         return actor_loss
 
     def get_critic_loss(self, Q_value, reward):
