@@ -80,12 +80,12 @@ class Net(nn.Module):
         
         self.mu = nn.Sequential(
             nn.Linear(nr_hidden_units, act_dim),
-            nn.Tanh()
+            nn.Sigmoid() #TODO Which function? Tanh
         )
 
         self.sigma = nn.Sequential(
             nn.Linear(nr_hidden_units, act_dim),
-            nn.Softplus()
+            nn.Sigmoid() #TODO Which function? Softplus
         )
 
         self.value = nn.Linear(nr_hidden_units, 1)
@@ -120,9 +120,14 @@ class Agent():
         log_prob = dist.log_prob(action)
         entropy  = dist.entropy()
 
+        # transform to valid action space
+        action = torch.clip(action, min=0, max=1)
+        action = self.action_low + action * (self.action_high - self.action_low)
+        
+        # check if action is valid
+        assert action >= self.action_low and action <= self.action_high
+        
         return action
-
-        # return env.action_space.sample()
     
     def update(self, state, action, reward, next_state, done):
         entropy, loss, policy_loss, entropy_loss, value_loss = 0, 0, 0, 0, 0
