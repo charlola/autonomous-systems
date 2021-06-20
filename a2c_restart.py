@@ -101,6 +101,43 @@ class Net(nn.Module):
 
         return mu, sigma, value
 
+class Buffer():
+    def __init__(self):
+        self.actions = list()
+        self.logprobs = list()
+        self.states = list()
+        self.next_states = list()
+        self.rewards = list()
+        self.mus = list()
+        self.sigmas = list()
+        self.entropies = list()
+        self.dones = list()
+
+    def add_policy(self, action, logprob, entropy, mu, sigma):
+        self.actions.append(action)
+        self.logprobs.append(logprob)
+        self.entropies.append(entropy)
+        self.mus.append(mu)
+        self.sigmas.append(sigma)
+
+    def add_update(self, state, next_state, reward, done):
+        self.states.append(state)
+        self.next_states.append(next_state)
+        self.rewards.append(reward)
+        self.dones.append(done)
+
+    def clear(self):
+        self.actions.clear()
+        self.logprobs.clear()
+        self.states.clear()
+        self.next_states.clear()
+        self.rewards.clear()
+        self.mus.clear()
+        self.sigmas.clear()
+        self.entropies.clear()
+        self.dones.clear()
+
+
 
 class Agent():
     def __init__(self):
@@ -108,6 +145,7 @@ class Agent():
         self.action_high = env.action_space.high[0]
 
         self.net = Net()
+        self.buffer = Buffer()
 
     def policy(self, state):
 
@@ -117,7 +155,7 @@ class Agent():
         dist = Normal(mu, sigma)
 
         action   = dist.sample()
-        log_prob = dist.log_prob(action)
+        logprob = dist.log_prob(action)
         entropy  = dist.entropy()
 
         # transform to valid action space
@@ -127,12 +165,23 @@ class Agent():
         # check if action is valid
         assert action >= self.action_low and action <= self.action_high
         
+        self.buffer.add_policy(action, logprob, entropy, mu, sigma)
+
         return action
     
     def update(self, state, action, reward, next_state, done):
+        self.buffer.add_update(state, next_state, reward, done)
+
+        if done:
+            self.learn()
+
+
+    def learn(self):        
         entropy, loss, policy_loss, entropy_loss, value_loss = 0, 0, 0, 0, 0
 
-        return entropy, loss, policy_loss, entropy_loss, value_loss
+        # Logging
+        string_format = "E {:^12.4f} \tL {:^12.4f} \tPL {:^12.4f} \tEL {:^12.4f} \tVL {:^12.4f} \t"
+        print(string_format.format(entropy, loss, policy_loss, entropy_loss, value_loss), end="")
 
 def episode(i, gamma=0.99):
     state = env.reset()
@@ -140,6 +189,8 @@ def episode(i, gamma=0.99):
     avg_return = None
     done = False
     t = 0
+    string_format = "{: >3d}: "
+    print(string_format.format(i+1), end="")
     while not done:
         if args.graphics:
             env.render()
@@ -148,7 +199,7 @@ def episode(i, gamma=0.99):
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
-        entropy, loss, policy_loss, entropy_loss, value_loss = agent.update(state, action, reward, next_state, done)
+        agent.update(state, action, reward, next_state, done)
 
         state = next_state
         
@@ -160,8 +211,9 @@ def episode(i, gamma=0.99):
             avg_return += (1 / (t+1)) * (reward-avg_return)
 
         t += 1
-    string_format = "{: >3d}: R {:^12.4f} \tE {:^12.4f} \tL {:^12.4f} \tPL {:^12.4f} \tEL {:^12.4f} \tVL {:^12.4f}"
-    print(string_format.format(i+1, avg_return, entropy, loss, policy_loss, entropy_loss, value_loss))
+    string_format = "R {:^12.4f}"
+    print(string_format.format(avg_return))
+
     return dis_return
 
 
