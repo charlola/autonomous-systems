@@ -12,5 +12,5 @@ def load_env(no_graphics=False):
 
 def create_gym_env():
     # Pendulum-v0
-    env = gym.make('MountainCarContinuous-v0')
+    env = gym.make('Pendulum-v0')
     return env

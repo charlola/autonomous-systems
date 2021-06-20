@@ -5,6 +5,7 @@ import numpy as np
 from src.agent.agent import Agent
 from src.ppo.actorcritic import ActorCritic
 from src.ppo.trajectory import Trajectory
+import mlflow
 
 
 class PPOAgent(Agent):
@@ -59,24 +60,18 @@ class PPOAgent(Agent):
 
         return action
 
-    def update_part_1(self, state, reward, next_state):
+    def update(self, state, action, reward, next_state, done, nr_episode):
         state = torch.tensor(state, dtype=torch.float).to(self.device)
         next_state = torch.tensor(next_state, dtype=torch.float).to(self.device)
 
         # collect states and rewards
         self.trajectory.add_update(state, next_state, reward)
 
-        return self.trajectory.size(), self.step_size
-
-    def update_part_2(self, done):
         # train model if necessary (done or reached step size)
         if done or self.trajectory.size() == self.step_size:
-            loss, actor_loss, critic_loss, entropy = self.train()
-            return loss, actor_loss, critic_loss, entropy
-        else:
-            pass
+            self.train(nr_episode)
 
-    def train(self):
+    def train(self, nr_episode):
         # wrap as tensors
         states = torch.squeeze(torch.stack(self.trajectory.states, dim=0)).detach().to(self.device)
         next_states = torch.squeeze(torch.stack(self.trajectory.next_states, dim=0)).detach().to(self.device)
@@ -95,6 +90,8 @@ class PPOAgent(Agent):
             critic_losses = []
             entropy_losses = []
 
+            if len(batches[k]) == 0:
+                continue
             for index in batches[k]:
                 advantage = self.calculate_advantage(rewards[index], states[index], next_states[index])
 
@@ -108,18 +105,26 @@ class PPOAgent(Agent):
                 critic_losses.append(critic_loss)
                 entropy_losses.append(noise)
 
-            loss = torch.stack(actor_losses) + torch.stack(critic_losses) - torch.stack(entropy_losses)
+            actor_loss = torch.stack(actor_losses)
+            critic_loss = torch.stack(critic_losses)
+            entropy = torch.stack(entropy_losses)
+            loss = actor_loss + critic_loss - entropy
+            loss = loss.mean()
 
             # take gradient step
-            self.net.optimize(loss.mean())
+            self.net.optimize(loss)
+
+            mlflow.log_metric("loss", loss.item(), step=nr_episode)
+            mlflow.log_metric("actor_loss", actor_loss.mean().item(), step=nr_episode)
+            mlflow.log_metric("critic_loss", critic_loss.mean().item(), step=nr_episode)
+            mlflow.log_metric("entropy", entropy.mean().item(), step=nr_episode)
+
 
         # Copy new weights into old policy
         self.net_backup.copy_weights(self.net)
 
         # Clear buffer
         self.trajectory.clear()
-
-        return loss, actor_loss, critic_loss, entropy
 
 
     def create_batches(self):
