@@ -72,7 +72,6 @@ if __name__ == "__main__":
         env = gym.make('MountainCarContinuous-v0')
     elif args.domain == 'lunar':
         env = gym.make('LunarLanderContinuous-v2')
-        #env.env.continuous = True
     elif args. domain == 'pendel':
         env = gym.make('Pendulum-v0')
     else:
@@ -100,8 +99,8 @@ if __name__ == "__main__":
     }
 
     # create TensorBoard Writer
-    writer = SummaryWriter()
-    # writer = None
+    # writer = SummaryWriter()
+    writer = None
 
     signal.signal(signal.SIGINT, signal_handler)
     # create agent

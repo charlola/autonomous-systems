@@ -61,12 +61,11 @@ class A2CAgent(Agent):
             params["nr_actions"],
             hyperparams["nr_hidden_units"],
         ).to(self.device)
-
+        self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=hyperparams["alpha"])
         # load model from file
         if params["load_model"] and os.path.isfile(params["model"]):
             self.a2c_net.load(params["model"])
 
-        self.optimizer = T.optim.Adam(self.a2c_net.parameters(), lr=hyperparams["alpha"])
 
     def save(self, checkpoint_path):
         self.a2c_net.save(checkpoint_path)
@@ -88,15 +87,16 @@ class A2CAgent(Agent):
         discounted_returns.reverse()
         return discounted_returns
 
-    def advantage_temporal_difference(self, reward, value, next_value):
+    def advantage_temporal_difference(self, reward, value, next_value, done):
+        if done: return reward
         td_error = reward + self.gamma * next_value
         return td_error - value
 
     def advantage_r_l(self, R, value):
         return R - value
 
-    def get_advantage(self, R, reward, value, next_value):
-        if self.advantage == "TD": return self.advantage_temporal_difference(reward, value, next_value)
+    def get_advantage(self, R, reward, value, next_value, done):
+        if self.advantage == "TD": return self.advantage_temporal_difference(reward, value, next_value, done)
         elif self.advantage == "RL": return self.advantage_r_l(R, value)
         return self.advantage_r_l()
 
@@ -119,7 +119,6 @@ class A2CAgent(Agent):
         entropy_loss = None
         value_loss = None
         if done:
-            self.optimizer.zero_grad()
             states, actions, rewards, next_states, dones = tuple(zip(*self.transitions))
 
             rewards = T.tensor(rewards, device=self.device, dtype=T.float)
@@ -141,9 +140,9 @@ class A2CAgent(Agent):
             value_losses = []
             entropy_losses = []
 
-            for mu_v, sig_v, dist, action, value, next_value, R, reward in zip(action_mus, action_sigs, action_distributions, actions, state_values,
-                                                                  next_state_values, normalized_returns, rewards):
-                advantage = self.get_advantage(R, reward, value, next_value)
+            for mu_v, sig_v, dist, action, value, next_value, R, reward, done in zip(action_mus, action_sigs, action_distributions, actions, state_values,
+                                                                  next_state_values, normalized_returns, rewards, dones):
+                advantage = self.get_advantage(R, reward, value, next_value, done)
                 # policy_losses.append(self.calc_policy_loss(dist, action, advantage))
                 policy_losses.append(self.calc_policy_loss(mu_v, sig_v, actions, advantage))
                 # entropy_losses.append(self.calc_entropy_loss(dist))
@@ -157,6 +156,7 @@ class A2CAgent(Agent):
             loss.backward()
 
             self.optimizer.step()
+            self.optimizer.zero_grad()
             self.transitions.clear()
 
         return loss, policy_loss, value_loss, entropy_loss
