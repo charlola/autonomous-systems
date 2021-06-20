@@ -209,8 +209,11 @@ class Agent():
             exit()
         
         # calculate discounted return
+        dis_returns = list()
         R = 0
-        dis_returns = reversed([r + args.gamma * R for r in reversed(rewards)])
+        for r in reversed(rewards):
+            R = r + args.gamma * R
+            dis_returns.insert(0, R)
 
         """
         LEARN STUFF
