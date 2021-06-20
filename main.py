@@ -31,6 +31,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
     entropy = 0
     done = False
     time_step = 0
+    avg_return = 0
     states = []
     while not done:
         if not params['no_graphics']: env.render()
@@ -42,6 +43,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         if params['learn']: loss, policy_loss, value_loss, entropy_loss = agent.update(state, action, reward, next_state, done)
         states.append(state)
         state = next_state
+        avg_return = avg_return + (1/(time_step+1))*(reward - avg_return)
         discounted_return += (hyperparams["discount_factor"] ** time_step) * reward
         time_step += 1
 
@@ -59,7 +61,7 @@ def episode(env, agent, nr_episode, hyperparams, writer):
         }, nr_episode)
         writer.add_graph(agent.a2c_net, T.tensor(states, device=agent.device, dtype=T.float32))
     string_format = "{:0>3d}: R {:^16.4f} \tE {:^16.4f} \tL {:^16.4f} \tPL {:^16.4f} \tEL {:^16.4f} \tVL {:^16.4f}"
-    print(string_format.format(nr_episode, discounted_return, entropy_item, loss, policy_loss, entropy_loss, value_loss))
+    print(string_format.format(nr_episode, avg_return, entropy_item, loss, policy_loss, entropy_loss, value_loss))
 
     return discounted_return
 
@@ -93,8 +95,8 @@ if __name__ == "__main__":
         "gamma": 0.99,
         "alpha": 10**-3,
         "discount_factor": 0.99,
-        "nr_hidden_units": 2**3,
-        "entropy_factor": 10**-1,
+        "nr_hidden_units": 2**5,
+        "entropy_factor": 10**-3,
         "advantage": "TD",
     }
 
