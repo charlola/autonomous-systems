@@ -27,15 +27,15 @@ def collect_arguments():
 
     # hyperparameter
     parser.add_argument("--gamma", default=0.99,  metavar='I', type=float, help="Gamma")
-    parser.add_argument("--lr",    default=0.001, metavar='F', type=float, help="Learning Rate")
-    parser.add_argument("--noise", default=0.003, metavar='F', type=float, help="Noise Factor")
+    parser.add_argument("--lr",    default=0.0005, metavar='F', type=float, help="Learning Rate")
+    parser.add_argument("--noise", default=0.001, metavar='F', type=float, help="Noise Factor")
     parser.add_argument("--value", default=0.5,   metavar='F', type=float, help="Value Factor")
 
     ############################################################################
 
     parser.add_argument("--mode", default="train", metavar='M', type=str,
                         help='Mode to evaluate (train|test)')
-    parser.add_argument("-m", "--model", default="ppo.nn", metavar='S',
+    parser.add_argument("--model", default="ppo.nn", metavar='S',
                         type=str, help='Define the model to be used/overwritten')
     parser.add_argument("--batch_size", default=4096, metavar='I',
                         type=int, help="Size of the batch")
@@ -144,11 +144,11 @@ class Agent():
         self.net = Net()
         self.buffer = Buffer()
         self.logger = dict()
+        self.logger["total_reward"] = list()
         self.logger["loss"]  = list()
         self.logger["actor_loss"]  = list()
         self.logger["critic_loss"] = list()
         self.logger["entropy"] = list()
-        self.logger["entropy_loss"] = list()
                 
         self.mse = nn.MSELoss()
 
@@ -220,10 +220,10 @@ class Agent():
         mus, sigmas, values = self.net(states)
         next_mus, next_sigmas, next_values = self.net(next_states)
 
-        #advantages = rewards - values.detach()
-        advantages = rewards + args.gamma * next_values.detach() - values.detach()
-
-        p1 = -((actions - mus) ** 2) / (2 * sigmas.clamp(min=1e-3)) # TODO video didnt use  sigma** 2
+        #advantages = rewards + args.gamma * next_values.detach() - values.detach()
+        advantages = rewards - values.detach()
+        
+        p1 = -((actions - mus) ** 2) / (2 * sigmas.clamp(min=1e-3)) # TODO video didnt use sigma**2
         p2 = -torch.log(torch.sqrt(2 * math.pi * sigmas)) # TODO video didnt use sigma**2
         calc_logprobs = (p1 + p2)
         #print(logprobs)
@@ -231,7 +231,7 @@ class Agent():
 
         policy_loss = -(logprobs * advantages).mean() # TODO evtl calc_logprobs instead of logprobs
 
-        value_loss  = args.value * self.mse(rewards, values.squeeze(-1)) # TODO evtl discounted returns
+        value_loss  = args.value * self.mse(values.squeeze(-1), rewards) # TODO evtl discounted returns
 
         entropy_calc = -(torch.log(2*math.pi*sigmas) + 1) / 2
 
@@ -245,11 +245,11 @@ class Agent():
 
         entropy = entropies.mean()
 
+        self.logger["total_reward"].append(rewards.sum())
         self.logger["loss"].append(loss)
         self.logger["actor_loss"].append(policy_loss)
         self.logger["critic_loss"].append(value_loss)
         self.logger["entropy"].append(entropy)
-        self.logger["entropy_loss"].append(entropy_loss)
 
         # Logging
         string_format = "E {:^12.4f} \tL {:^12.4f} \tPL {:^12.4f} \tEL {:^12.4f} \tVL {:^12.4f} \t"
@@ -287,6 +287,18 @@ def episode(i, gamma=0.99):
     print(string_format.format(avg_return))
 
     return dis_return
+    
+def show_episode():
+    state = env.reset()
+    done = False
+    while not done:
+        env.render()
+        # 1. Select action according to policy
+        action = agent.policy(state)
+        # 2. Execute selected action
+        next_state, reward, done, _ = env.step(action)
+        state = next_state
+    
 
 
 def plot(returns, smoothing=0.9, use_average=True, start_avg=10):
@@ -294,6 +306,9 @@ def plot(returns, smoothing=0.9, use_average=True, start_avg=10):
         print("To Short for plot")
         return
 
+    columns = 2
+    fig, axs = plt.subplots(int((columns-1+1+len(agent.logger))/columns), 2, figsize=(10, 6), constrained_layout=True)
+    
     x = range(len(returns)-start_avg+1)
     y = [sum(returns[:start_avg]) / start_avg]
 
@@ -304,15 +319,14 @@ def plot(returns, smoothing=0.9, use_average=True, start_avg=10):
             temp = y[-1] * smoothing + r * (1-smoothing)
         y.append(temp)
     
-    plt.plot(x, y)
-    plt.title("Progress")
-    plt.xlabel("episode")
-    plt.ylabel("undiscounted return")
-    plt.show()
+    axs[0, 0].plot(x, y)
+    axs[0, 0].set_title("discounted return")
 
-    for name, values in agent.logger.items():
+    for i, (name, values) in enumerate(agent.logger.items(), start=1):
+        xi = i % columns
+        yi = int(i / columns)
+
         x = range(len(values)-start_avg+1)
-        
         y = [sum(values[:start_avg]) / start_avg]
 
         for t, r in enumerate(values[start_avg:]):
@@ -322,13 +336,9 @@ def plot(returns, smoothing=0.9, use_average=True, start_avg=10):
                 temp = y[-1] * smoothing + r * (1-smoothing)
             y.append(temp)
         
-
-        plt.clf()
-        plt.plot(x, y)
-        plt.title("Progress")
-        plt.xlabel("timestamp")
-        plt.ylabel(name)
-        plt.show()
+        axs[yi, xi].plot(x, y)
+        axs[yi, xi].set_title(name)
+    plt.show()
 
 if __name__ == "__main__":
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -347,3 +357,6 @@ if __name__ == "__main__":
             break
 
     plot(returns)
+
+    for i in range(1):
+        show_episode()
