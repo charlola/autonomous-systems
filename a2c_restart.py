@@ -1,5 +1,5 @@
 import gym
-from torch.distributions import MultivariateNormal
+from torch.distributions import Normal, normal
 from torch.optim import Adam
 import torch.nn as nn
 import torch
@@ -19,6 +19,8 @@ def collect_arguments():
 
     parser.add_argument("-g", "--graphics", default=False, metavar='B',
                         type=str2bool, help="Define if graphics should be shown")
+    parser.add_argument("--hidden_units", default=64, metavar='I',
+                        type=int, help="Number of hidden units")
 
     ############################################################################
 
@@ -28,8 +30,6 @@ def collect_arguments():
                         help='Define the number of episodes')
     parser.add_argument("-m", "--model", default="ppo.nn", metavar='S',
                         type=str, help='Define the model to be used/overwritten')
-    parser.add_argument("--hidden_units", default=64, metavar='I',
-                        type=int, help="Number of hidden units")
     parser.add_argument("--batch_size", default=4096, metavar='I',
                         type=int, help="Size of the batch")
     parser.add_argument("--step_limit", default=1024, metavar='I',
@@ -60,9 +60,69 @@ def collect_arguments():
     
     return parser.parse_args()
 
+class Net(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+
+        # get dimenstions from environment
+        obs_dim = env.observation_space.shape[0]
+        act_dim = env.action_space.shape[0]
+        
+        # get hyperparameter
+        nr_hidden_units = args.hidden_units
+
+        self.base = nn.Sequential(
+            nn.Linear(obs_dim, nr_hidden_units),
+            nn.ReLU(),
+            nn.Linear(nr_hidden_units, nr_hidden_units),
+            nn.ReLU(),
+        )
+        
+        self.mu = nn.Sequential(
+            nn.Linear(nr_hidden_units, act_dim),
+            nn.Tanh()
+        )
+
+        self.sigma = nn.Sequential(
+            nn.Linear(nr_hidden_units, act_dim),
+            nn.Softplus()
+        )
+
+        self.value = nn.Linear(nr_hidden_units, 1)
+    
+    def forward(self, state):
+        if isinstance(state, np.ndarray):
+            state = torch.tensor(state, device=device, dtype=torch.float)
+
+        base  = self.base(state)
+        mu    = self.mu(base)
+        sigma = self.sigma(base)
+        value = self.value(base)
+
+        return mu, sigma, value
+
+
 class Agent():
+    def __init__(self):
+        self.action_low  = env.action_space.low[0]
+        self.action_high = env.action_space.high[0]
+
+        self.net = Net()
+
     def policy(self, state):
-        return env.action_space.sample()
+
+        with torch.no_grad():
+            mu, sigma, _ = self.net(state)
+
+        dist = Normal(mu, sigma)
+
+        action   = dist.sample()
+        log_prob = dist.log_prob(action)
+        entropy  = dist.entropy()
+
+        return action
+
+        # return env.action_space.sample()
     
     def update(self, state, action, reward, next_state, done):
         entropy, loss, policy_loss, entropy_loss, value_loss = 0, 0, 0, 0, 0
@@ -104,7 +164,8 @@ def plot(returns, agent):
     pass
 
 if __name__ == "__main__":
-
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     args = collect_arguments()
 
     env = gym.make('Pendulum-v0')
