@@ -1,8 +1,8 @@
 import torch
 import numpy as np
-from src.ppo_pat.network import Net
 from torch.distributions import MultivariateNormal
 
+from network import Net
 
 class PPO:
     def __init__(self, env):

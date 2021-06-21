@@ -1,5 +1,5 @@
-from src.environment import worm
-from src.ppo_pat.ppo import PPO
+import worm
+from ppo import PPO
 from src.agent.a2c import A2CAgent
 from src.ppo.ppo import PPOAgent
 from src.ppo.config import hyperparams
