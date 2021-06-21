@@ -41,18 +41,14 @@ if __name__ == "__main__":
     # TESTING PAT #
     ###############
     model = PPO(env)
-    rewards = model.learn(500000)
-    running_reward = None
-    running_rewards = []
+    rewards = model.learn(400000)
+    
+    avg_returns = rewards[:1]
+    for t, reward in enumerate(rewards[1:], start=1):
+        avg_returns.append(avg_returns[-1] + (1/(t+1))*(reward - avg_returns[-1]))
 
-    for i in rewards:
-        if running_reward is None:
-            running_reward = i
-        running_reward = running_reward * 0.9 + i * 0.1
-        running_rewards.append(running_reward)
-
-    x = range(len(running_rewards))
-    y = running_rewards
+    x = range(len(avg_returns))
+    y = avg_returns
 
     plt.plot(x, y)
     plt.title("Progress")

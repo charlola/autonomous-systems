@@ -14,6 +14,7 @@ class PPO:
         self.n_updates_per_iteration = 5        # 5
         self.clip = 0.2                         # 0.2
         self.lr = 0.005                         # 0.005
+        self.hidden_layer = 64                  # 64
 
         # Environment information
         self.env = env
@@ -21,8 +22,8 @@ class PPO:
         self.act_dim = env.action_space.shape[0]
 
         # Initialize actor and critic networks
-        self.actor  = Net(self.state_dim, self.act_dim)
-        self.critic = Net(self.state_dim, 1)
+        self.actor  = Net(self.state_dim, self.hidden_layer, self.act_dim)
+        self.critic = Net(self.state_dim, self.hidden_layer, 1)
 
         # Create our variable for the matrix
         # Chose 0.5 for standarddeviation
@@ -31,8 +32,10 @@ class PPO:
         self.cov_mat = torch.diag(self.cov_var)
 
         # Initialize optimizer
-        self.actor_optim = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
+        self.actor_optim  = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
+
+        self.logging = {name:[] for name in ["Actor Loss", "Critic Loss"]}
 
     def learn(self, total_timesteps):
 
@@ -43,7 +46,7 @@ class PPO:
         rewards2go = []
 
         while self.t_so_far < total_timesteps:
-
+            
             # Perform rollout to get batches
             batch_state, batch_acts, batch_log_probs, batch_rewards_togo, batch_lengths, sum_rewards = self.rollout()
 
@@ -54,7 +57,7 @@ class PPO:
             self.t_so_far += np.sum(batch_lengths)
             
             # Evaluate state and actions
-            V, _ = self.evaluate(batch_state, batch_acts)
+            V, _, entropy = self.evaluate(batch_state, batch_acts)
 
             # Calculate Advantage
             A_k = batch_rewards_togo - V.detach()
@@ -63,13 +66,13 @@ class PPO:
             # Subtracting 1e-10, so there will be no possibility of dividing by 0
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-            algorithm = "a2c"
+            algorithm = "ppo"
             if algorithm == "ppo":
                 # default at 5 updates per iteration
                 for _ in range(self.n_updates_per_iteration):
 
                     # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
-                    V, current_log_probs = self.evaluate(batch_state, batch_acts)
+                    V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts)
 
                     # Calculate ratios
                     ratios = torch.exp(current_log_probs - batch_log_probs)
@@ -93,7 +96,7 @@ class PPO:
                     self.critic_optim.step()
     
             elif algorithm == "a2c":
-                V, current_log_probs = self.evaluate(batch_state, batch_acts) 
+                V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts) 
 
                 actor_loss = (-current_log_probs * A_k).mean()
                 critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
@@ -110,15 +113,18 @@ class PPO:
             else:
                 raise NotImplementedError
             
-            pattern = "S {:^8d} \tA {:^8.8f} \tV {:^8.1f}"
+            pattern = "S {:^8d} \tActor Loss {:^8.8f} \tCritic Loss {:^8.2f}"
             print(pattern.format(self.t_so_far, actor_loss, critic_loss))
+
+            self.logging["Actor Loss"].append(actor_loss)
+            self.logging["Critic Loss"].append(critic_loss)
 
             #TODO clear batch ? 
 
         return rewards2go
 
     def rollout(self):
-
+        
         # Batch data
         batch_state = []            # batch states
         batch_acts = []             # batch actions
@@ -233,5 +239,6 @@ class PPO:
         mean = self.actor(batch_state)
         dist = MultivariateNormal(mean, self.cov_mat)
         log_probs = dist.log_prob(batch_acts)
+        entropy = dist.entropy()
 
-        return V, log_probs
+        return V, log_probs, entropy
