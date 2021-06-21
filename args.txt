@@ -2,4 +2,4 @@
 --learn True
 --check_step 500
 --no_graphics True
---episodes 10000
+--episodes 500

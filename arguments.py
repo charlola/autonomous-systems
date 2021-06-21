@@ -49,7 +49,7 @@ def get_checkpoint_dir(domain, dir="", checkpoint=""):
 
 def get_checkpoint_model(domain, dir="", best=False, checkpoint=""):
     """
-    :return: Path to checkpoint file, Path to checkpoint dir, Number of last Episode
+    :return: Path to checkpoint file, Epoch where to start, Should load the model?
     """
     if checkpoint:
         if os.path.isfile(checkpoint):
@@ -58,7 +58,7 @@ def get_checkpoint_model(domain, dir="", best=False, checkpoint=""):
             else:
                 start = get_trailing_number(checkpoint.replace(".nn", ""))
             checkpoint_dir = os.path.dirname(checkpoint) + "\\"
-            return checkpoint, start, True
+            return checkpoint_dir, start, True
         else:
             print("Error reading Checkpoint-File '", checkpoint, "'")
             exit(-1)

@@ -8,6 +8,8 @@ env_single/UnityEnvironment_Data/*
 /models/*
 args.txt
 plots/
+/ml_flow/
+
 # Partly created by https://www.gitignore.io/api/vim,kate,linux,emacs,macos,python,windows,pycharm,eclipse,sublimetext,intellij+iml,visualstudiocode
 *.tgz
 

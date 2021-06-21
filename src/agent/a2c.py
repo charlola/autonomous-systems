@@ -49,6 +49,7 @@ class A2CNet(nn.Module):
 class A2CAgent(Agent):
     def __init__(self, hyperparams, params):
         Agent.__init__(self, hyperparams)
+        self.params = params
         self.eps = numpy.finfo(numpy.float32).eps.item()
         self.transitions = []
         self.device = T.device("cuda:0" if T.cuda.is_available() else "cpu")
@@ -66,7 +67,6 @@ class A2CAgent(Agent):
         if params["load_model"] and os.path.isfile(params["model"]):
             self.a2c_net.load(params["model"])
 
-
     def save(self, checkpoint_path):
         self.a2c_net.save(checkpoint_path)
 
@@ -75,7 +75,7 @@ class A2CAgent(Agent):
         dist = T.distributions.Normal(mu, sigma)
         action = dist.sample()
         action = T.flatten(action)
-        action = T.clip(action, -1, 1)
+        action = T.clip(action, self.params["action_min"], self.params["action_max"])
         return action.data.cpu().numpy(), dist.entropy()
 
     def calculate_discounted_reward(self, rewards):
@@ -98,18 +98,20 @@ class A2CAgent(Agent):
         return R - value
 
     def get_advantage(self, R, reward, value, next_value, done):
-        if self.advantage == "TD": return self.advantage_temporal_difference(reward, value, next_value, done)
-        elif self.advantage == "RL": return self.advantage_r_l(R, value)
+        if self.advantage == "TD":
+            return self.advantage_temporal_difference(reward, value, next_value, done)
+        elif self.advantage == "RL":
+            return self.advantage_r_l(R, value)
         return self.advantage_r_l(R, value)
 
     def calc_policy_loss(self, mu_v, sig_v, action_v, advantage):
-        p1 = -((action_v - mu_v) ** 2) / (2 * sig_v**2)
-        p2 = -T.log(torch.sqrt(2 * math.pi * sig_v**2))
+        p1 = -((action_v - mu_v) ** 2) / (2 * sig_v ** 2)
+        p2 = -T.log(torch.sqrt(2 * math.pi * sig_v ** 2))
         return (p1 + p2) * advantage
 
     def calc_entropy_loss(self, sig_v):
         # return dist.entropy() * self.entropy_factor
-        return self.entropy_factor * (-(T.log(2*math.pi*sig_v) + 1)/2)
+        return self.entropy_factor * (-(T.log(2 * math.pi * sig_v) + 1) / 2)
 
     def calc_value_loss(self, values, reward):
         return T.nn.MSELoss()(values.squeeze(-1), reward)
@@ -140,8 +142,14 @@ class A2CAgent(Agent):
             value_losses = []
             entropy_losses = []
 
-            for mu_v, sig_v, action, value, next_value, R, reward, done in zip(action_mus, action_sigs, actions, state_values,
-                                                                  next_state_values, normalized_returns, rewards, dones):
+            for mu_v, sig_v, action, value, next_value, R, reward, done in zip(action_mus,
+                                                                               action_sigs,
+                                                                               actions,
+                                                                               state_values,
+                                                                               next_state_values,
+                                                                               normalized_returns,
+                                                                               rewards,
+                                                                               dones):
                 advantage = self.get_advantage(R, reward, value, next_value, done)
                 policy_losses.append(self.calc_policy_loss(mu_v, sig_v, actions, advantage))
                 entropy_losses.append(self.calc_entropy_loss(sig_v))
