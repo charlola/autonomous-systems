@@ -21,7 +21,7 @@ class PPO:
         self.act_dim = env.action_space.shape[0]
 
         # Initialize actor and critic networks
-        self.actor = Net(self.state_dim, self.act_dim)
+        self.actor  = Net(self.state_dim, self.act_dim)
         self.critic = Net(self.state_dim, 1)
 
         # Create our variable for the matrix
@@ -52,8 +52,7 @@ class PPO:
 
             # Calculate how many timesteps were collected this batch
             self.t_so_far += np.sum(batch_lengths)
-            print(self.t_so_far)
-
+            
             # Evaluate state and actions
             V, _ = self.evaluate(batch_state, batch_acts)
 
@@ -64,23 +63,41 @@ class PPO:
             # Subtracting 1e-10, so there will be no possibility of dividing by 0
             A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-            # default at 5 updates per iteration
-            for _ in range(self.n_updates_per_iteration):
+            algorithm = "a2c"
+            if algorithm == "ppo":
+                # default at 5 updates per iteration
+                for _ in range(self.n_updates_per_iteration):
 
-                # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
-                V, current_log_probs = self.evaluate(batch_state, batch_acts)
+                    # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
+                    V, current_log_probs = self.evaluate(batch_state, batch_acts)
 
-                # Calculate ratios
-                ratios = torch.exp(current_log_probs - batch_log_probs)
+                    # Calculate ratios
+                    ratios = torch.exp(current_log_probs - batch_log_probs)
 
-                # Calculate surrogate losses
-                surr1 = ratios * A_k
-                surr2 = torch.clamp(ratios, 1-self.clip, 1+self.clip) * A_k
+                    # Calculate surrogate losses
+                    surr1 = ratios * A_k
+                    surr2 = torch.clamp(ratios, 1-self.clip, 1+self.clip) * A_k
 
-                # Calculate actor and critic loss
-                actor_loss = (-torch.min(surr1, surr2)).mean()
+                    # Calculate actor and critic loss
+                    actor_loss = (-torch.min(surr1, surr2)).mean()
+                    critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
+
+                    # Calculate gradients and perform backward propagation for actor network
+                    self.actor_optim.zero_grad()
+                    actor_loss.backward()
+                    self.actor_optim.step()
+
+                    # Calculate gradients and perform backward propagation for critic network
+                    self.critic_optim.zero_grad()
+                    critic_loss.backward()
+                    self.critic_optim.step()
+    
+            elif algorithm == "a2c":
+                V, current_log_probs = self.evaluate(batch_state, batch_acts) 
+
+                actor_loss = (-current_log_probs * A_k).mean()
                 critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
-
+                
                 # Calculate gradients and perform backward propagation for actor network
                 self.actor_optim.zero_grad()
                 actor_loss.backward()
@@ -90,6 +107,13 @@ class PPO:
                 self.critic_optim.zero_grad()
                 critic_loss.backward()
                 self.critic_optim.step()
+            else:
+                raise NotImplementedError
+            
+            pattern = "S {:^8d} \tA {:^8.8f} \tV {:^8.1f}"
+            print(pattern.format(self.t_so_far, actor_loss, critic_loss))
+
+            #TODO clear batch ? 
 
         return rewards2go
 
