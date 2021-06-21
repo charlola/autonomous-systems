@@ -35,60 +35,78 @@ class PPO:
         self.actor_optim  = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
 
-        self.logging = {name:[] for name in ["Actor Loss", "Critic Loss"]}
+        self.logging = {name:[] for name in ["Total Reward", "Actor Loss", "Critic Loss"]}
 
-    def learn(self, total_timesteps):
+    def learn(self, episodes):
 
         # Timesteps simulated so far
         self.t_so_far = 0
 
         episode = 0
+        batch = 0
 
         # Collect rewards
         rewards2go = []
 
-        while self.t_so_far < total_timesteps:
+        while episode < episodes:
+            try:
+                # Perform rollout to get batches
+                batch_state, batch_acts, batch_log_probs, batch_rewards_togo, batch_lengths, sum_rewards = self.rollout()
+                
+                # Sum up rewards and add to list
+                rewards2go += sum_rewards
 
-            # Perform rollout to get batches
-            batch_state, batch_acts, batch_log_probs, batch_rewards_togo, batch_lengths, sum_rewards = self.rollout()
+                # Calculate how many timesteps were collected this batch
+                self.t_so_far += np.sum(batch_lengths)
 
-            # Sum up rewards and add to list
-            rewards2go += sum_rewards
+                episode += len(sum_rewards)
+                batch += 1
+                
+                # Evaluate state and actions
+                V, _, entropy = self.evaluate(batch_state, batch_acts)
 
-            # Calculate how many timesteps were collected this batch
-            self.t_so_far += np.sum(batch_lengths)
+                # Calculate Advantage
+                A_k = batch_rewards_togo - V.detach()
 
-            episode += 1
-            
-            # Evaluate state and actions
-            V, _, entropy = self.evaluate(batch_state, batch_acts)
+                # Normalize Advantages (Trick: makes PPO more stable)
+                # Subtracting 1e-10, so there will be no possibility of dividing by 0
+                A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
 
-            # Calculate Advantage
-            A_k = batch_rewards_togo - V.detach()
+                algorithm = "ppo"
+                if algorithm == "ppo":
+                    # default at 5 updates per iteration
+                    for _ in range(self.n_updates_per_iteration):
 
-            # Normalize Advantages (Trick: makes PPO more stable)
-            # Subtracting 1e-10, so there will be no possibility of dividing by 0
-            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+                        # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
+                        V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts)
 
-            algorithm = "ppo"
-            if algorithm == "ppo":
-                # default at 5 updates per iteration
-                for _ in range(self.n_updates_per_iteration):
+                        # Calculate ratios
+                        ratios = torch.exp(current_log_probs - batch_log_probs)
 
-                    # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
-                    V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts)
+                        # Calculate surrogate losses
+                        surr1 = ratios * A_k
+                        surr2 = torch.clamp(ratios, 1-self.clip, 1+self.clip) * A_k
 
-                    # Calculate ratios
-                    ratios = torch.exp(current_log_probs - batch_log_probs)
+                        # Calculate actor and critic loss
+                        actor_loss = (-torch.min(surr1, surr2)).mean()
+                        critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
 
-                    # Calculate surrogate losses
-                    surr1 = ratios * A_k
-                    surr2 = torch.clamp(ratios, 1-self.clip, 1+self.clip) * A_k
+                        # Calculate gradients and perform backward propagation for actor network
+                        self.actor_optim.zero_grad()
+                        actor_loss.backward()
+                        self.actor_optim.step()
 
-                    # Calculate actor and critic loss
-                    actor_loss = (-torch.min(surr1, surr2)).mean()
+                        # Calculate gradients and perform backward propagation for critic network
+                        self.critic_optim.zero_grad()
+                        critic_loss.backward()
+                        self.critic_optim.step()
+        
+                elif algorithm == "a2c":
+                    V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts) 
+
+                    actor_loss = (-current_log_probs * A_k).mean()
                     critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
-
+                    
                     # Calculate gradients and perform backward propagation for actor network
                     self.actor_optim.zero_grad()
                     actor_loss.backward()
@@ -98,30 +116,19 @@ class PPO:
                     self.critic_optim.zero_grad()
                     critic_loss.backward()
                     self.critic_optim.step()
-    
-            elif algorithm == "a2c":
-                V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts) 
-
-                actor_loss = (-current_log_probs * A_k).mean()
-                critic_loss = torch.nn.MSELoss()(V, batch_rewards_togo)
+                else:
+                    raise NotImplementedError
                 
-                # Calculate gradients and perform backward propagation for actor network
-                self.actor_optim.zero_grad()
-                actor_loss.backward()
-                self.actor_optim.step()
-
-                # Calculate gradients and perform backward propagation for critic network
-                self.critic_optim.zero_grad()
-                critic_loss.backward()
-                self.critic_optim.step()
-            else:
-                raise NotImplementedError
-            
-            pattern = "E {:^8d} \tActor Loss {:^8.8f} \tCritic Loss {:^8.2f}"
-            print(pattern.format(episode, actor_loss, critic_loss))
-            
-            self.logging["Actor Loss"].append(actor_loss.item())
-            self.logging["Critic Loss"].append(critic_loss.item())
+                R = np.mean(sum_rewards)
+                
+                pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >8.8f} \tCritic Loss {: >12.2f}"
+                print(pattern.format(batch, episode, R, actor_loss, critic_loss))
+                
+                self.logging["Total Reward"].append(R)
+                self.logging["Actor Loss"].append(actor_loss.item())
+                self.logging["Critic Loss"].append(critic_loss.item())
+            except KeyboardInterrupt:
+                break
 
         return rewards2go
 

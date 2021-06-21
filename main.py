@@ -41,32 +41,18 @@ if __name__ == "__main__":
     # TESTING PAT #
     ###############
     agent = PPO(env)
-    rewards = agent.learn(400000)
+    rewards = agent.learn(1500)
     
     columns = 2
     use_average = False
 
-    fig, axs = plt.subplots(int((columns-1+2+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
+    fig, axs = plt.subplots(int((columns-1+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
     
     start_avg = 1
-
-    x = range(len(rewards)-start_avg+1)
-    y = [sum(rewards[:start_avg]) / start_avg]
-
-    for t, r in enumerate(rewards[start_avg:]):
-        if use_average:
-            y.append(y[-1] + (1/(t+1)) * (r-y[-1]))
-        else:
-            y.append(y[-1] * .9 + r * .1)
     
-    axs[0, 0].plot(x, y)
-    axs[0, 0].set_title("total return")
-
-    for i, (name, values) in enumerate(agent.logging.items(), start=2):
+    for i, (name, values) in enumerate(agent.logging.items()):
         xi = i % columns
         yi = int(i / columns)
-
-        print(xi, yi)
 
         x = list(range(len(values)-start_avg+1))
         y = [sum(values[:start_avg]) / start_avg]
@@ -78,10 +64,6 @@ if __name__ == "__main__":
             else:
                 temp = y[-1] * .9 + r * .1
             y.append(temp)
-        
-        print(x)
-        print(y)
-        print()
 
         axs[yi, xi].plot(x, y)
         axs[yi, xi].set_title(name)
