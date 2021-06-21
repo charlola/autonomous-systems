@@ -1,18 +1,21 @@
+import sys
+sys.coinit_flags=2
+
+import matplotlib.pyplot as plt
+
 import worm
 import commandline
 from ppo import PPO
-import sys
-sys.coinit_flags=2
-import matplotlib.pyplot as plt
+from a2c import A2C
 
-def episode(env, agent, nr_episode, hyperparams):
+
+def episode(env, agent, nr_episode):
     state = env.reset()
     discounted_return = 0
     done = False
-    time_step = 0
+    t = 0
     while not done:
-        if args.graphics:
-            env.render()
+        env.render()
         # 1. Select action according to policy
         action = agent.policy(state)
         # 2. Execute selected action
@@ -20,10 +23,71 @@ def episode(env, agent, nr_episode, hyperparams):
         # 3. Integrate new experience into agent
         agent.update(state, action, reward, next_state, done)
         state = next_state
-        discounted_return += (hyperparams["gamma"]**time_step)*reward.item()
-        time_step += 1
+        discounted_return += (args.gamma**t)*reward.item()
+        t += 1
     print(nr_episode, ":", discounted_return)
     return discounted_return
+
+
+def loop(agent, episodes):
+
+    episode = 0
+    batch   = 0
+
+    logger = {name:[] for name in ["Total Reward", "Average Reward", "Actor Loss", "Critic Loss"]}
+
+    while episode < episodes:
+        try:
+            sum_rewards, avg_rewards, actor_loss, critic_loss = agent.learn()
+
+            # Add the number of rewards from rollout
+            episode += len(sum_rewards)
+            batch   += 1
+
+            pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f}"
+            print(pattern.format(batch, episode, avg_rewards, actor_loss, critic_loss))
+            
+            logger["Total Reward"].extend(sum_rewards)
+            logger["Average Reward"].append(avg_rewards)
+            logger["Actor Loss"].append(actor_loss)
+            logger["Critic Loss"].append(critic_loss)
+
+        except KeyboardInterrupt:
+            break
+        
+    return logger 
+
+def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
+    
+    # calculate number of culumns
+    rows = int((columns-1+len(logger))/columns)
+
+    # create subplots
+    fig, axs = plt.subplots(rows, columns, figsize=(10, 6), constrained_layout=True)
+    
+    # create plot for every entry in the logger
+    for i, (name, values) in enumerate(logger.items()):
+        # calculate the position of the subplot
+        xi = i % columns
+        yi = int(i / columns)
+
+        # define x range 
+        x = list(range(len(values)-start_avg+1))
+
+        # calculate y values with smoothing
+        y = [sum(values[:start_avg]) / start_avg]
+        for t, r in enumerate(values[start_avg:]):
+            if use_average:
+                temp = y[-1] + (1/(t+1)) * (r-y[-1])
+            else:
+                temp = y[-1] * smoothing + r * (1-smoothing)
+            y.append(temp)
+
+        # plot values with name as title
+        axs[yi, xi].plot(x, y)
+        axs[yi, xi].set_title(name)
+
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -40,37 +104,26 @@ if __name__ == "__main__":
     args.state_dim = env.observation_space.shape[0]
     args.act_dim   = env.action_space.shape[0]
 
-    ###############
-    # TESTING PAT #
-    ###############
-    agent = PPO(args)
-    rewards = agent.learn(args.episodes)
-    
-    columns = 2
-    use_average = False
-    
-    fig, axs = plt.subplots(int((columns-1+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
-    
-    start_avg = 1
+    # create agent
+    if args.algorithm == "ppo":
+        agent = PPO(args)
 
-    for i, (name, values) in enumerate(agent.logging.items()):
-        xi = i % columns
-        yi = int(i / columns)
-
-        x = list(range(len(values)-start_avg+1))
-        y = [sum(values[:start_avg]) / start_avg]
-        
-        for t, r in enumerate(values[start_avg:]):
-            if use_average:
-                temp = y[-1] + (1/(t+1)) * (r-y[-1])
-            else:
-                temp = y[-1] * .9 + r * .1
-            y.append(temp)
-
-        axs[yi, xi].plot(x, y)
-        axs[yi, xi].set_title(name)
-    plt.show()
+    elif args.algorithm == "a2c":
+        agent = A2C(args)
+    else:
+        raise NotImplementedError
     
+    # train agent
+    logger = loop(agent, args.episodes)
+    
+    # plot results
+    plot(logger)
+    
+
+    if args.graphics:
+        for i in range(3):
+            episode(env, agent, i)
+
 
     '''
     hyperparams["env"] = env
