@@ -13,7 +13,8 @@ class PPOAgent(Agent):
         Agent.__init__(self, params)
 
         # choose device (gpu if availiable)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
 
         # collect hyperparameter
         self.gamma = params["gamma"]
@@ -165,8 +166,8 @@ class PPOAgent(Agent):
         p1 = ratio * advantage
         p2 = ratio.clip(1 - self.epsilon, 1 + self.epsilon) * advantage
         # epsilon decay hinzugefuegt
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        #if self.epsilon > self.epsilon_min:
+        #    self.epsilon *= self.epsilon_decay
         actor_loss = -torch.min(p1, p2)
         return actor_loss
 
@@ -176,6 +177,6 @@ class PPOAgent(Agent):
 
     def get_noise(self, entropy):
         # eventuell wie epsilon decay noise_factor reduzieren --> Check
-        if self.noise_factor > self.noise_min:
-            self.noise_factor *= self.noise_decay
+        #if self.noise_factor > self.noise_min:
+         #   self.noise_factor *= self.noise_decay
         return entropy * self.noise_factor
