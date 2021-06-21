@@ -35,7 +35,7 @@ class PPO:
         self.actor_optim  = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
 
-        self.logging = {name:[] for name in ["Total Reward", "Actor Loss", "Critic Loss"]}
+        self.logging = {name:[] for name in ["Total Reward", "Average Reward", "Actor Loss", "Critic Loss"]}
 
     def learn(self, episodes):
 
@@ -52,7 +52,7 @@ class PPO:
             try:
                 # Perform rollout to get batches
                 batch_state, batch_acts, batch_log_probs, batch_rewards_togo, batch_lengths, sum_rewards = self.rollout()
-                
+
                 # Sum up rewards and add to list
                 rewards2go += sum_rewards
 
@@ -124,9 +124,13 @@ class PPO:
                 pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >8.8f} \tCritic Loss {: >12.2f}"
                 print(pattern.format(batch, episode, R, actor_loss, critic_loss))
                 
-                self.logging["Total Reward"].append(R)
+                self.logging["Total Reward"].extend(sum_rewards)
+                self.logging["Average Reward"].append(R)
                 self.logging["Actor Loss"].append(actor_loss.item())
                 self.logging["Critic Loss"].append(critic_loss.item())
+
+                    
+
             except KeyboardInterrupt:
                 break
 

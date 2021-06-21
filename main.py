@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # TESTING PAT #
     ###############
     agent = PPO(env)
-    rewards = agent.learn(1500)
+    rewards = agent.learn(2000)
     
     columns = 2
     use_average = False
@@ -49,14 +49,13 @@ if __name__ == "__main__":
     fig, axs = plt.subplots(int((columns-1+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
     
     start_avg = 1
-    
+
     for i, (name, values) in enumerate(agent.logging.items()):
         xi = i % columns
         yi = int(i / columns)
 
         x = list(range(len(values)-start_avg+1))
         y = [sum(values[:start_avg]) / start_avg]
-
         
         for t, r in enumerate(values[start_avg:]):
             if use_average:
