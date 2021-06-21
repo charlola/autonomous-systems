@@ -40,21 +40,53 @@ if __name__ == "__main__":
     ###############
     # TESTING PAT #
     ###############
-    model = PPO(env)
-    rewards = model.learn(400000)
+    agent = PPO(env)
+    rewards = agent.learn(400000)
     
-    avg_returns = rewards[:1]
-    for t, reward in enumerate(rewards[1:], start=1):
-        avg_returns.append(avg_returns[-1] + (1/(t+1))*(reward - avg_returns[-1]))
+    columns = 2
+    use_average = False
 
-    x = range(len(avg_returns))
-    y = avg_returns
+    fig, axs = plt.subplots(int((columns-1+2+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
+    
+    start_avg = 1
 
-    plt.plot(x, y)
-    plt.title("Progress")
-    plt.xlabel("timestep")
-    plt.ylabel("reward")
+    x = range(len(rewards)-start_avg+1)
+    y = [sum(rewards[:start_avg]) / start_avg]
+
+    for t, r in enumerate(rewards[start_avg:]):
+        if use_average:
+            y.append(y[-1] + (1/(t+1)) * (r-y[-1]))
+        else:
+            y.append(y[-1] * .9 + r * .1)
+    
+    axs[0, 0].plot(x, y)
+    axs[0, 0].set_title("total return")
+
+    for i, (name, values) in enumerate(agent.logging.items(), start=2):
+        xi = i % columns
+        yi = int(i / columns)
+
+        print(xi, yi)
+
+        x = list(range(len(values)-start_avg+1))
+        y = [sum(values[:start_avg]) / start_avg]
+
+        
+        for t, r in enumerate(values[start_avg:]):
+            if use_average:
+                temp = y[-1] + (1/(t+1)) * (r-y[-1])
+            else:
+                temp = y[-1] * .9 + r * .1
+            y.append(temp)
+        
+        print(x)
+        print(y)
+        print()
+
+        axs[yi, xi].plot(x, y)
+        axs[yi, xi].set_title(name)
     plt.show()
+    
 
     '''
     hyperparams["env"] = env

@@ -42,11 +42,13 @@ class PPO:
         # Timesteps simulated so far
         self.t_so_far = 0
 
+        episode = 0
+
         # Collect rewards
         rewards2go = []
 
         while self.t_so_far < total_timesteps:
-            
+
             # Perform rollout to get batches
             batch_state, batch_acts, batch_log_probs, batch_rewards_togo, batch_lengths, sum_rewards = self.rollout()
 
@@ -55,6 +57,8 @@ class PPO:
 
             # Calculate how many timesteps were collected this batch
             self.t_so_far += np.sum(batch_lengths)
+
+            episode += 1
             
             # Evaluate state and actions
             V, _, entropy = self.evaluate(batch_state, batch_acts)
@@ -113,13 +117,11 @@ class PPO:
             else:
                 raise NotImplementedError
             
-            pattern = "S {:^8d} \tActor Loss {:^8.8f} \tCritic Loss {:^8.2f}"
-            print(pattern.format(self.t_so_far, actor_loss, critic_loss))
-
-            self.logging["Actor Loss"].append(actor_loss)
-            self.logging["Critic Loss"].append(critic_loss)
-
-            #TODO clear batch ? 
+            pattern = "E {:^8d} \tActor Loss {:^8.8f} \tCritic Loss {:^8.2f}"
+            print(pattern.format(episode, actor_loss, critic_loss))
+            
+            self.logging["Actor Loss"].append(actor_loss.item())
+            self.logging["Critic Loss"].append(critic_loss.item())
 
         return rewards2go
 
