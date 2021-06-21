@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # TESTING PAT #
     ###############
     agent = PPO(env)
-    rewards = agent.learn(2000)
+    rewards = agent.learn(5000)
     
     columns = 2
     use_average = False

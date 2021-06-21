@@ -13,13 +13,14 @@ class PPO:
         self.gamma = 0.95                       # 0.95
         self.n_updates_per_iteration = 5        # 5
         self.clip = 0.2                         # 0.2
-        self.lr = 0.005                         # 0.005
+        self.actor_lr  = 0.005                  # 0.005
+        self.critic_lr = 0.005                  # 0.005
         self.hidden_layer = 64                  # 64
 
         # Environment information
         self.env = env
         self.state_dim = env.observation_space.shape[0]
-        self.act_dim = env.action_space.shape[0]
+        self.act_dim   = env.action_space.shape[0]
 
         # Initialize actor and critic networks
         self.actor  = Net(self.state_dim, self.hidden_layer, self.act_dim)
@@ -32,8 +33,8 @@ class PPO:
         self.cov_mat = torch.diag(self.cov_var)
 
         # Initialize optimizer
-        self.actor_optim  = torch.optim.Adam(self.actor.parameters(), lr=self.lr)
-        self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.lr)
+        self.actor_optim  = torch.optim.Adam(self.actor.parameters(),  lr=self.actor_lr)
+        self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.critic_lr)
 
         self.logging = {name:[] for name in ["Total Reward", "Average Reward", "Actor Loss", "Critic Loss"]}
 
@@ -71,8 +72,8 @@ class PPO:
                 # Normalize Advantages (Trick: makes PPO more stable)
                 # Subtracting 1e-10, so there will be no possibility of dividing by 0
                 A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
-
-                algorithm = "ppo"
+                
+                algorithm = "a2c"
                 if algorithm == "ppo":
                     # default at 5 updates per iteration
                     for _ in range(self.n_updates_per_iteration):
@@ -121,7 +122,7 @@ class PPO:
                 
                 R = np.mean(sum_rewards)
                 
-                pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >8.8f} \tCritic Loss {: >12.2f}"
+                pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f}"
                 print(pattern.format(batch, episode, R, actor_loss, critic_loss))
                 
                 self.logging["Total Reward"].extend(sum_rewards)
