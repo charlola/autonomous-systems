@@ -5,36 +5,25 @@ from torch.distributions import MultivariateNormal
 from network import Net
 
 class PPO:
-    def __init__(self, env):
-
-        # Default varlues for hyperparameters
-        self.timesteps_per_batch = 4800         # 4800
-        self.max_timesteps_per_episode = 1600   # 1600
-        self.gamma = 0.95                       # 0.95
-        self.n_updates_per_iteration = 5        # 5
-        self.clip = 0.2                         # 0.2
-        self.actor_lr  = 0.005                  # 0.005
-        self.critic_lr = 0.005                  # 0.005
-        self.hidden_layer = 64                  # 64
+    def __init__(self, args):
+        self.args = args
 
         # Environment information
-        self.env = env
-        self.state_dim = env.observation_space.shape[0]
-        self.act_dim   = env.action_space.shape[0]
+        self.env = args.env
 
         # Initialize actor and critic networks
-        self.actor  = Net(self.state_dim, self.hidden_layer, self.act_dim)
-        self.critic = Net(self.state_dim, self.hidden_layer, 1)
+        self.actor  = Net(args.state_dim, args.hidden_units, args.act_dim)
+        self.critic = Net(args.state_dim, args.hidden_units, 1)
 
         # Create our variable for the matrix
         # Chose 0.5 for standarddeviation
         # Create covariance matrix
-        self.cov_var = torch.full(size=(self.act_dim,), fill_value=0.5)
+        self.cov_var = torch.full(size=(args.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
 
         # Initialize optimizer
-        self.actor_optim  = torch.optim.Adam(self.actor.parameters(),  lr=self.actor_lr)
-        self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=self.critic_lr)
+        self.actor_optim  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr)
+        self.critic_optim = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr)
 
         self.logging = {name:[] for name in ["Total Reward", "Average Reward", "Actor Loss", "Critic Loss"]}
 
@@ -61,7 +50,7 @@ class PPO:
                 self.t_so_far += np.sum(batch_lengths)
 
                 episode += len(sum_rewards)
-                batch += 1
+                batch   += 1
                 
                 # Evaluate state and actions
                 V, _, entropy = self.evaluate(batch_state, batch_acts)
@@ -73,10 +62,10 @@ class PPO:
                 # Subtracting 1e-10, so there will be no possibility of dividing by 0
                 A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
                 
-                algorithm = "a2c"
-                if algorithm == "ppo":
+                
+                if self.args.algorithm == "ppo":
                     # default at 5 updates per iteration
-                    for _ in range(self.n_updates_per_iteration):
+                    for _ in range(self.args.k):
 
                         # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
                         V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts)
@@ -86,7 +75,7 @@ class PPO:
 
                         # Calculate surrogate losses
                         surr1 = ratios * A_k
-                        surr2 = torch.clamp(ratios, 1-self.clip, 1+self.clip) * A_k
+                        surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A_k
 
                         # Calculate actor and critic loss
                         actor_loss = (-torch.min(surr1, surr2)).mean()
@@ -102,7 +91,7 @@ class PPO:
                         critic_loss.backward()
                         self.critic_optim.step()
         
-                elif algorithm == "a2c":
+                elif self.args.algorithm == "a2c":
                     V, current_log_probs, entropy = self.evaluate(batch_state, batch_acts) 
 
                     actor_loss = (-current_log_probs * A_k).mean()
@@ -154,7 +143,7 @@ class PPO:
         sum_rewards = []
 
         # default 4800
-        while t < self.timesteps_per_batch:
+        while t < self.args.batch_size:
 
             # Rewards this episode
             ep_rewards = []
@@ -162,7 +151,7 @@ class PPO:
             done = False
 
             # default 1600
-            for ep_t in range(self.max_timesteps_per_episode):
+            for ep_t in range(self.args.max_step):
 
                 # Render state
                 #if self.t_so_far > 400000:
@@ -236,7 +225,7 @@ class PPO:
             # The discounted reward so far
             discounted_reward = 0
             for rew in reversed(ep_rewards):
-                discounted_reward = rew + discounted_reward * self.gamma
+                discounted_reward = rew + discounted_reward * self.args.gamma
                 batch_rewards_togo.insert(0, discounted_reward)
 
         # Convert the rewards-to-go into a tensor

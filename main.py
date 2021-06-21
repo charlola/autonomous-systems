@@ -1,9 +1,6 @@
 import worm
+import commandline
 from ppo import PPO
-from src.agent.a2c import A2CAgent
-from src.ppo.ppo import PPOAgent
-from src.ppo.config import hyperparams
-from src import arguments
 import sys
 sys.coinit_flags=2
 import matplotlib.pyplot as plt
@@ -31,21 +28,27 @@ def episode(env, agent, nr_episode, hyperparams):
 
 if __name__ == "__main__":
 
-    #args = arguments.collect()
-
+    # collect arguments from command line
+    args = commandline.collect_arguments()
+    
     # load environment
     #env = worm.load_env(no_graphics=not args.graphics)
     env = worm.create_gym_env()
+    
+    # collect env information in args
+    args.env = env
+    args.state_dim = env.observation_space.shape[0]
+    args.act_dim   = env.action_space.shape[0]
 
     ###############
     # TESTING PAT #
     ###############
-    agent = PPO(env)
-    rewards = agent.learn(5000)
+    agent = PPO(args)
+    rewards = agent.learn(args.episodes)
     
     columns = 2
     use_average = False
-
+    
     fig, axs = plt.subplots(int((columns-1+len(agent.logging))/columns), 2, figsize=(10, 6), constrained_layout=True)
     
     start_avg = 1
