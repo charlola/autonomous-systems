@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 class Agent():
     def __init__(self, args):
@@ -32,6 +33,9 @@ class Agent():
         while t < self.args.batch_size:
 
             # Rewards this episode
+            ep_states    = []
+            ep_actions   = []
+            ep_log_probs = []
             ep_rewards = []
             state = self.args.env.reset()
             done = False
@@ -50,26 +54,39 @@ class Agent():
                 next_state, reward, done, _ = self.args.env.step(action)
 
                 # Collect observation (state), reward, action, and log prob
-                states.append(state)
+                ep_states.append(state)
                 ep_rewards.append(reward)
-                actions.append(action)
-                log_probs.append(log_prob)
+                ep_actions.append(action)
+                ep_log_probs.append(log_prob)
 
                 state = next_state
 
                 if done:
+                    # apply zero padding
+                    def create(sample):
+                        if type(sample) == int: return 0
+                        else: return np.zeros_like(sample)
+                    
+                    for ep_t in range(self.args.max_step - (ep_t + 1)):
+                        ep_states.insert(0,     create(state))
+                        ep_actions.insert(0,    create(action))
+                        ep_log_probs.insert(0,  0)
+                        ep_rewards.insert(0,    0)
+                   
                     break
 
             # Add summed rewards to list
-            #print("Reward: ", sum(ep_rewards))
             sum_rewards.append(sum(ep_rewards))
 
             # Collect episodic rewards
             rewards.append(ep_rewards)
+            states.extend(ep_states)
+            actions.extend(ep_actions)
+            log_probs.extend(ep_log_probs)
 
         # calculate discounted return
         discounted_return = self.compute_rewards_togo(rewards)
-        
+
         # Reshape data as tensors
         states            = torch.tensor(states,            dtype=torch.float)
         actions           = torch.tensor(actions,           dtype=torch.float)

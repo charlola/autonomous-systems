@@ -15,6 +15,7 @@ from a2c import A2C
 def episode(env, agent, nr_episode):
     state = env.reset()
     discounted_return = 0
+    total_return = 0
     done = False
     t = 0
     while not done:
@@ -26,10 +27,12 @@ def episode(env, agent, nr_episode):
         # 3. Integrate new experience into agent
         agent.update(state, action, reward, next_state, done)
         state = next_state
-        discounted_return += (args.gamma**t)*reward.item()
+        reward = (reward if type(reward) == int else reward.item())
+        discounted_return += (args.gamma**t)*reward
+        total_return += reward
         t += 1
-    print(nr_episode, ":", discounted_return)
-    return discounted_return
+    print(nr_episode, ":", total_return)
+    return total_return
 
 
 def loop(agent, episodes):
@@ -57,7 +60,7 @@ def loop(agent, episodes):
             logger["Critic Loss"].append(critic_loss)
             logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
 
-            if batch > 10 and all(std < 30 for std in logger["Avg Std"][-10:]):
+            if batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
 
         except KeyboardInterrupt:
@@ -157,6 +160,7 @@ def trainable(hyperparameter):
     args.act_dim   = env.action_space.shape[0]
     args.action_low  = env.action_space.low[0]
     args.action_high = env.action_space.high[0]
+    args.max_step = env._max_episode_steps
 
     # create agent
     if args.algorithm == "ppo":
