@@ -1,10 +1,13 @@
 import argparse
 
 def collect_arguments():
-    def str2bool(str):
-        if str.lower() in ["false", "f", "0", False]:
+    def str2bool(s):
+        if s.lower() in ["false", "f", "0", False]:
             return False
         return True
+
+    def str2list(s):
+        return list(map(int, s.split()))
 
     parser = argparse.ArgumentParser(
         description='Define the parameter for Captain Wurmi')
@@ -16,7 +19,7 @@ def collect_arguments():
     parser.add_argument("--use_hyperparameter",  default="False",        type=str2bool, help="Define the environment")
     
     # net
-    parser.add_argument("--hidden_units", default=64, metavar='I', type=int, help="Number of hidden units")
+    parser.add_argument("--hidden_units", default="64 128 64", metavar='L', type=str2list, help="Hidden units as list separated by single space")
 
     # hyperparameter
     parser.add_argument("--gamma",            default=0.95,   type=float, help="Gamma")

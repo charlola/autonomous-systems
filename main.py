@@ -121,19 +121,19 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
 def get_hyperparameter():
     return {
         # "nr_hidden_units": tune.grid_search([64]),
-        "gamma": tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
-        "hidden_units": tune.grid_search([64]), 
+        "gamma":            tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
+        "hidden_units":     tune.grid_search([[64, 64], [64, 128], [128, 256]]),
         # learning rate
-        "clip": tune.grid_search([0.2]),
+        "clip":             tune.grid_search([0.2]),
         # define config/hyperparams for actor critic
-        "critic_discount": tune.grid_search([0.5]),
-        "actor_lr": tune.grid_search([0.005, 0.001]),
-        "critic_lr": tune.grid_search([0.005]),
+        "critic_discount":  tune.grid_search([0.5]),
+        "actor_lr":         tune.grid_search([0.005, 0.001]),
+        "critic_lr":        tune.grid_search([0.005]),
         # number of times to update the actor-critic
-        "k": tune.grid_search([4]),
+        "k":                tune.grid_search([4]),
         # number of steps to collect for each trajectory
-        "batch_size": tune.grid_search([4800]),
-        "max_step": tune.grid_search([1600]),  # 0.9 to 1
+        "batch_size":       tune.grid_search([4800]),
+        "max_step":         tune.grid_search([1600]),  # 0.9 to 1
 
         # config for mlflow logging
         "mlflow": {

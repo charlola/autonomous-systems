@@ -9,13 +9,17 @@ class Net(nn.Module):
     def __init__(self, in_dim, hidden_units, out_dim):
         super(Net, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Linear(in_dim, hidden_units),
-            nn.ReLU(),
-            nn.Linear(hidden_units, hidden_units),
-            nn.ReLU(),
-            nn.Linear(hidden_units, out_dim)
-        )
+        units = [in_dim] 
+        for unit in hidden_units:
+            units += [unit, unit]
+        units += [out_dim]
+
+        layers = list()
+        for i, (input_dim, output_dim) in enumerate(zip(*[iter(units)]*2)):
+            if i != 0:
+                layers.append(nn.ReLU())
+            layers.append(nn.Linear(input_dim, output_dim))
+        self.net = nn.Sequential(*layers)
 
     # state = observation = obs
     def forward(self, state):
