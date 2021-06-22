@@ -13,7 +13,7 @@ def collect_arguments():
     parser.add_argument("-e", "--episodes",      default=100,           type=int,      help="Define the number of episodes")
     parser.add_argument("-g", "--graphics",      default=False,         type=str2bool, help="Define if graphics should be shown")
     parser.add_argument("--env_name",            default="Pendulum-v0", type=str,      help="Define the environment")
-    parser.add_argument("--use_hyperparameter", default=False,         type=str2bool, help="Define the environment")
+    parser.add_argument("--use_hyperparameter",  default=False,         type=str2bool, help="Define the environment")
     
     # net
     parser.add_argument("--hidden_units", default=64, metavar='I', type=int, help="Number of hidden units")
