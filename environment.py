@@ -10,10 +10,10 @@ def load_env(no_graphics=False):
 
     return env
 
-def create_gym_env():
+def create_gym_env(name):
     # Pendulum-v0
     #env = gym.make('MountainCarContinuous-v0')
-    env = gym.make('Pendulum-v0')
+    env = gym.make(name)
 
     # return env.env to avoid setting done in env.step() after 200 steps
     return env

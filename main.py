@@ -3,7 +3,7 @@ sys.coinit_flags=2
 
 import matplotlib.pyplot as plt
 
-import worm
+import environment
 import commandline
 from ppo import PPO
 from a2c import A2C
@@ -96,8 +96,10 @@ if __name__ == "__main__":
     args = commandline.collect_arguments()
     
     # load environment
-    #env = worm.load_env(no_graphics=not args.graphics)
-    env = worm.create_gym_env()
+    if args.env_name == "worm":
+        env = environment.load_env(no_graphics=not args.graphics)
+    else:
+        env = environment.create_gym_env(args.env_name)
     
     # collect env information in args
     args.env = env
