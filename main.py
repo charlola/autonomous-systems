@@ -1,7 +1,9 @@
-import sys
+import os, sys
+from glob import glob as listdir
 sys.coinit_flags=2
 
 import matplotlib.pyplot as plt
+from ray import tune
 
 import environment
 import commandline
@@ -91,29 +93,43 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
         axs[yi, xi].plot(x, y)
         axs[yi, xi].set_title(name)
 
-    plt.savefig("image.png")
+    main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
+    folder = os.path.join(main_folder, "run_%03d" % len(listdir(main_folder + "/run_*")))
+    os.makedirs(folder, exist_ok=True)
+
+    plt.savefig(os.path.join(folder, "image.png"))
     plt.show()
 
 
-def set_hyperparameter():
+def get_hyperparameter():
+    return {
+        # "nr_hidden_units": tune.grid_search([64]),
+        "gamma": tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
+        # learning rate
+        "clip": tune.grid_search([0.2, 0.4]),
+        # define config/hyperparams for actor critic
+        "critic_discount": tune.grid_search([0.005]),
+        "actor_lr": tune.grid_search([0.005]),
+        "critic_lr": tune.grid_search([0.005]),
+        # number of times to update the actor-critic
+        "k": tune.grid_search([4, 5]),
+        # number of steps to collect for each trajectory
+        "batch_size": tune.grid_search([32, 64]),
+        "max_step": tune.grid_search([1600]),  # 0.9 to 1
 
-    hyperparameter = {
-        #"gamma": raytune.grid_search[0.99, 0.95],
-        #...
+        # config for mlflow logging
+        "mlflow": {
+            "experiment_name": "ppo",
+            "tracking_uri": "http://159.65.120.229:5000"
+        }
     }
 
-    # hyperparameter tuning
-    for key, value in hyperparameter.items():
-        setattr(args, key, value)
+def trainable(hyperparameter):
+    if hyperparameter is not None:
+        # hyperparameter tuning
+        for key, value in hyperparameter.items():
+            setattr(args, key, value)
 
-if __name__ == "__main__":
-
-    # collect arguments from command line
-    args = commandline.collect_arguments()
-
-    if args.use_hyper_parameter:
-        set_hyperparameter()
-    
     # load environment
     if args.env_name == "worm":
         env = environment.load_env(no_graphics=not args.graphics)
@@ -124,11 +140,12 @@ if __name__ == "__main__":
     args.env = env
     args.state_dim = env.observation_space.shape[0]
     args.act_dim   = env.action_space.shape[0]
+    args.action_low  = env.action_space.low[0]
+    args.action_high = env.action_space.high[0]
 
     # create agent
     if args.algorithm == "ppo":
         agent = PPO(args)
-
     elif args.algorithm == "a2c":
         agent = A2C(args)
     else:
@@ -146,3 +163,18 @@ if __name__ == "__main__":
 
     # close environment
     env.close()
+
+
+if __name__ == "__main__":
+
+    # collect arguments from command line
+    args = commandline.collect_arguments()
+
+    if args.use_hyperparameter:
+        analysis = tune.run(
+            trainable,
+            config=get_hyperparameter()
+        )
+    
+    else:
+        trainable(None)
