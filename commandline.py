@@ -19,7 +19,7 @@ def collect_arguments():
     parser.add_argument("--use_hyperparameter",  default="False",        type=str2bool, help="Define the environment")
     
     # net
-    parser.add_argument("--hidden_units", default="64 128 64", metavar='L', type=str2list, help="Hidden units as list separated by single space")
+    parser.add_argument("--hidden_units", default="64 64", metavar='L', type=str2list, help="Hidden units as list separated by single space")
 
     # hyperparameter
     parser.add_argument("--gamma",            default=0.95,   type=float, help="Gamma")
