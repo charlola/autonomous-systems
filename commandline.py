@@ -9,10 +9,6 @@ def collect_arguments():
     def str2list(s):
         return list(map(int, s.split()))
     
-    def str2layer(s):
-        from torch import nn
-        return getattr(nn, s)
-
     parser = argparse.ArgumentParser(
         description='Define the parameter for Captain Wurmi')
     
@@ -26,7 +22,7 @@ def collect_arguments():
 
     # net
     parser.add_argument("--hidden_units",     default="64 64", type=str2list,  help="Hidden units as list separated by single space e.g. '64 64'")
-    parser.add_argument("--activation",       default="ReLU",  type=str2layer, help="Define if hyperparamete training should be used (ReLU | Tanh | ...)")
+    parser.add_argument("--activation",       default="ReLU",  type=str, help="Define if hyperparamete training should be used (ReLU | Tanh | ...)")
 
     # hyperparameter
     parser.add_argument("--gamma",            default=0.95,   type=float, help="Gamma")
@@ -39,11 +35,11 @@ def collect_arguments():
 
     ############################################################################
 
-    parser.add_argument("--noise",          default=0.001,       type=float, help="Noise Factor")
-    parser.add_argument("--value",          default=0.5,         type=float, help="Value Factor")
-    parser.add_argument("--mode",           default="train",     type=str,   help='Mode to evaluate (train|test)')
-    parser.add_argument("--model",          default="ppo.nn",    type=str,   help='Define the model to be used/overwritten')
-    parser.add_argument("--advantage",      default="ADVANTAGE", type=str,   help="Choose the advantage function (REINFORCE | TEMPORAL | ADVANTAGE)")
-    parser.add_argument("--max_grad_norm",  default=0.5,         type=int,   help="Maximum of gradient")
+    parser.add_argument("--noise",              default=0.001,       type=float, help="Noise Factor")
+    parser.add_argument("--critic_discount",    default=0.5,         type=float, help="Value Factor")
+    parser.add_argument("--mode",               default="train",     type=str,   help='Mode to evaluate (train|test)')
+    parser.add_argument("--model",              default="ppo.nn",    type=str,   help='Define the model to be used/overwritten')
+    parser.add_argument("--advantage",          default="ADVANTAGE", type=str,   help="Choose the advantage function (REINFORCE | TEMPORAL | ADVANTAGE)")
+    parser.add_argument("--max_grad_norm",      default=0.5,         type=int,   help="Maximum of gradient")
     
     return parser.parse_args()

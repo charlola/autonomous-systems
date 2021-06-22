@@ -9,6 +9,9 @@ class Net(nn.Module):
     def __init__(self, in_dim, hidden_units, out_dim, activation):
         super(Net, self).__init__()
 
+        # get activation function
+        activation = getattr(nn, activation)
+
         units = [in_dim] 
         for unit in hidden_units:
             units += [unit, unit]

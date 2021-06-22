@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from ray import tune
 import numpy as np
 from torch import nn
+import json
+from urllib.parse import unquote
 
 import environment
 import commandline
@@ -73,7 +75,7 @@ def loop(agent, episodes):
         
     return logger 
 
-def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
+def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
     
     # calculate number of culumns
     rows = int((columns-1+len(logger))/columns)
@@ -111,10 +113,6 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
 
         axs[yi, xi].set_title(name)
 
-    main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
-    folder = os.path.join(main_folder, "run_%03d" % len(listdir(main_folder + "/run_*")))
-    os.makedirs(folder, exist_ok=True)
-
     plt.savefig(os.path.join(folder, "image.png"))
     if args.graphics:
         plt.show()
@@ -124,7 +122,7 @@ def get_hyperparameter():
         # "nr_hidden_units": tune.grid_search([64]),
         "gamma":            tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
         "hidden_units":     tune.grid_search([[64, 64], [64, 128], [128, 256]]),
-        "activation":       tune.grid_search([nn.ReLU, nn.Tanh]),
+        "activation":       tune.grid_search(["ReLU", "Tanh"]),
         # learning rate
         "clip":             tune.grid_search([0.2]),
         # define config/hyperparams for actor critic
@@ -145,10 +143,21 @@ def get_hyperparameter():
     }
 
 def trainable(hyperparameter):
-    if hyperparameter is not None:
+    if type(hyperparameter) == dict:
         # hyperparameter tuning
         for key, value in hyperparameter.items():
             setattr(args, key, value)
+    else:
+        hyperparameter = {name: getattr(args, name) for name in hyperparameter if name != "mlflow"}
+            
+    # define target folder
+    main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
+    folder = os.path.join(main_folder, "run_%03d" % len(listdir(main_folder + "/run_*")))
+    os.makedirs(folder, exist_ok=True)
+
+    # store settings
+    with open(os.path.join(folder, "settings.json"), "w") as file:
+        json.dump(hyperparameter, file, indent=4)
 
     # load environment
     if args.env_name == "worm":
@@ -172,11 +181,12 @@ def trainable(hyperparameter):
     else:
         raise NotImplementedError
     
+
     # train agent
     logger = loop(agent, args.episodes)
     
     # plot results
-    plot(logger)
+    plot(folder, logger)
     
     if args.graphics:
         for i in range(3):
@@ -198,4 +208,4 @@ if __name__ == "__main__":
         )
     
     else:
-        trainable(None)
+        trainable(list(get_hyperparameter().keys()))
