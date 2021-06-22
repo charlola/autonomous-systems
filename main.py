@@ -124,9 +124,10 @@ def get_hyperparameter():
 
 
 def trainable(hyperparameter):
-    # hyperparameter tuning
-    for key, value in hyperparameter.items():
-        setattr(args, key, value)
+    if hyperparameter is not None:
+        # hyperparameter tuning
+        for key, value in hyperparameter.items():
+            setattr(args, key, value)
 
     # load environment
     if args.env_name == "worm":
@@ -138,6 +139,8 @@ def trainable(hyperparameter):
     args.env = env
     args.state_dim = env.observation_space.shape[0]
     args.act_dim = env.action_space.shape[0]
+    args.action_low = env.action_space.low[0]
+    args.action_high = env.action_space.high[0]
 
     # create agent
     if args.algorithm == "ppo":
@@ -147,10 +150,7 @@ def trainable(hyperparameter):
         agent = A2C(args)
     else:
         raise NotImplementedError
-
-    # train agent
-    loop(agent, args.episodes)
-
+    
     # train agent
     logger = loop(agent, args.episodes)
 
@@ -171,7 +171,6 @@ if __name__ == "__main__":
     # collect arguments from command line
     args = commandline.collect_arguments()
 
-
     if args.use_hyperparameter:
         hyperparameter = get_hyperparameter()
         analysis = tune.run(
@@ -179,37 +178,4 @@ if __name__ == "__main__":
             config=hyperparameter
         )
     else:
-        # load environment
-        if args.env_name == "worm":
-            env = environment.load_env(no_graphics=not args.graphics)
-        else:
-            env = environment.create_gym_env(args.env_name)
-
-        # collect env information in args
-        args.env = env
-        args.state_dim = env.observation_space.shape[0]
-        args.act_dim = env.action_space.shape[0]
-        args.action_low = env.action_space.low[0]
-        args.action_high = env.action_space.high[0]
-
-        # create agent
-        if args.algorithm == "ppo":
-            agent = PPO(args)
-
-        elif args.algorithm == "a2c":
-            agent = A2C(args)
-        else:
-            raise NotImplementedError
-
-        # train agent
-        logger = loop(agent, args.episodes)
-
-        # plot results
-        plot(logger)
-
-        if args.graphics:
-            for i in range(3):
-                episode(env, agent, i)
-
-        # close environment
-        env.close()
+        trainable(None)
