@@ -4,6 +4,7 @@ sys.coinit_flags=2
 
 import matplotlib.pyplot as plt
 from ray import tune
+import numpy as np
 
 import environment
 import commandline
@@ -36,23 +37,28 @@ def loop(agent, episodes):
     episode = 0
     batch   = 0
 
-    logger = {name:[] for name in ["Total Reward", "Average Reward", "Actor Loss", "Critic Loss"]}
+    logger = {name:[] for name in ["Total Reward", "Average Reward", "Std", "Avg Std", "Actor Loss", "Critic Loss"]}
 
     while episode < episodes:
         try:
-            sum_rewards, avg_rewards, actor_loss, critic_loss = agent.learn()
+            std_rewads, sum_rewards, avg_rewards, actor_loss, critic_loss = agent.learn()
 
             # Add the number of rewards from rollout
             episode += len(sum_rewards)
             batch   += 1
 
-            pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f}"
-            print(pattern.format(batch, episode, avg_rewards, actor_loss, critic_loss))
+            pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tStd {: >6.6f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f}"
+            print(pattern.format(batch, episode, avg_rewards, std_rewads, actor_loss, critic_loss))
             
             logger["Total Reward"].extend(sum_rewards)
             logger["Average Reward"].append(avg_rewards)
+            logger["Std"].append(std_rewads)
             logger["Actor Loss"].append(actor_loss)
             logger["Critic Loss"].append(critic_loss)
+            logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
+
+            if batch > 10 and all(std < 30 for std in logger["Avg Std"][-10:]):
+                break
 
         except KeyboardInterrupt:
             break
@@ -90,7 +96,15 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
             y.append(temp)
 
         # plot values with name as title
+        axs[yi, xi].grid()
         axs[yi, xi].plot(x, y)
+        if i == 0:
+            std = np.array([np.std(y[-min(i, 300):]) for i in range(len(y))])
+            axs[yi, xi].fill_between(x, y-std, y+std, alpha = 0.5)
+        elif i == 1:
+            std = np.array(logger["Avg Std"])
+            axs[yi, xi].fill_between(x, y-std, y+std, alpha = 0.5)
+
         axs[yi, xi].set_title(name)
 
     main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
@@ -98,23 +112,24 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
     os.makedirs(folder, exist_ok=True)
 
     plt.savefig(os.path.join(folder, "image.png"))
-    plt.show()
-
+    if args.graphics:
+        plt.show()
 
 def get_hyperparameter():
     return {
         # "nr_hidden_units": tune.grid_search([64]),
         "gamma": tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
+        "hidden_units": tune.grid_search([64]), 
         # learning rate
-        "clip": tune.grid_search([0.2, 0.4]),
+        "clip": tune.grid_search([0.2]),
         # define config/hyperparams for actor critic
-        "critic_discount": tune.grid_search([0.005]),
-        "actor_lr": tune.grid_search([0.005]),
+        "critic_discount": tune.grid_search([0.5]),
+        "actor_lr": tune.grid_search([0.005, 0.001]),
         "critic_lr": tune.grid_search([0.005]),
         # number of times to update the actor-critic
-        "k": tune.grid_search([4, 5]),
+        "k": tune.grid_search([4]),
         # number of steps to collect for each trajectory
-        "batch_size": tune.grid_search([32, 64]),
+        "batch_size": tune.grid_search([4800]),
         "max_step": tune.grid_search([1600]),  # 0.9 to 1
 
         # config for mlflow logging

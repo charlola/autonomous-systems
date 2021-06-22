@@ -31,5 +31,6 @@ class A2C(PPO):
         self.optimize(actor_loss, critic_loss)
         
         avg_rewards = np.mean(sum_rewards)
+        std_rewads  = np.std(sum_rewards)
 
-        return sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item()
+        return std_rewads, sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item()
