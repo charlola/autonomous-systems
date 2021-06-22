@@ -19,10 +19,12 @@ def collect_arguments():
     parser.add_argument("-n", "--env_name",     default="Pendulum-v0",  type=str,      help="Define the environment")
     parser.add_argument("-t", "--tuning",       default=False,          type=str2bool, help="Define if hyperparameter tuning should be used")
     parser.add_argument("-i", "--interrupt",    default=True,           type=str2bool, help="Define if the algorithm can be interrupted due to low std")
+    parser.add_argument("-c", "--checkpoints",  default=20,             type=int     , help="The intervall of batches to store checkpoints of the net")
+    parser.add_argument("-l", "--load",         default=None,           type=str     , help="Load the weights for the net from")
 
     # net
-    parser.add_argument("--hidden_units",     default="64 64", type=str2list,  help="Hidden units as list separated by single space e.g. '64 64'")
-    parser.add_argument("--activation",       default="ReLU",  type=str, help="Define if hyperparamete training should be used (ReLU | Tanh | ...)")
+    parser.add_argument("--hidden_units",     default="64 64", type=str2list,   help="Hidden units as list separated by single space e.g. '64 64'")
+    parser.add_argument("--activation",       default="ReLU",  type=str,        help="Define if hyperparamete training should be used (ReLU | Tanh | ...)")
 
     # hyperparameter
     parser.add_argument("--gamma",            default=0.95,   type=float, help="Gamma")

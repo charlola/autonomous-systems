@@ -45,6 +45,8 @@ def loop(folder, agent, episodes):
 
     logger = {name:[] for name in ["Total Reward", "Average Reward", "Std", "Avg Std", "Actor Loss", "Critic Loss"]}
 
+    best = None
+
     while episode < episodes:
         try:
             std_rewads, sum_rewards, avg_rewards, actor_loss, critic_loss = agent.learn()
@@ -63,6 +65,14 @@ def loop(folder, agent, episodes):
             logger["Critic Loss"].append(critic_loss)
             logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
 
+            if best is None or avg_rewards > best:
+                agent.save(os.path.join(folder, "best"))
+                best = avg_rewards
+
+            if batch > 0 and batch % args.checkpoints == 0:
+                checkpoint = int(batch / args.checkpoints)
+                agent.save(os.path.join(folder, "checkpoint_%02d" % checkpoint))
+
             if args.interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
         
@@ -70,8 +80,6 @@ def loop(folder, agent, episodes):
             break
         except Exception as e:
             raise e
-        #finally:
-        #    agent.save(args.model)
     
     agent.save(os.path.join(folder, "final"))
 
@@ -183,6 +191,9 @@ def trainable(hyperparameter):
     else:
         raise NotImplementedError
     
+    if args.load is not None:
+        agent.load(os.path.join(main_folder, args.load))
+
     # train agent
     logger = loop(folder, agent, args.episodes)
     
@@ -190,6 +201,10 @@ def trainable(hyperparameter):
     plot(folder, logger)
     
     if args.graphics:
+        # load best model
+        agent.load(os.path.join(folder, "best"))
+
+        # show 3 examples of best episode
         for i in range(3):
             episode(env, agent, i)
 
