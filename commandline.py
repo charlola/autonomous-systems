@@ -37,5 +37,17 @@ def collect_arguments():
     parser.add_argument("--ppo_episodes",   default="4",         type=int,   help="Number of PPO Episodes")
     parser.add_argument("--advantage",      default="ADVANTAGE", type=str,   help="Choose the advantage function (REINFORCE | TEMPORAL | ADVANTAGE)")
     parser.add_argument("--max_grad_norm",  default=0.5,         type=int,   help="Maximum of gradient")
+
+    ############################################################################
+
+    parser.add_argument("-f", '--file', help="Enter path to a file containing arguments.(e.g. --file args.txt)", type=open,
+                        action=LoadFromFile)
     
     return parser.parse_args()
+
+
+class LoadFromFile(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        with values as f:
+            # parse arguments in the file and store them in the target namespace
+            parser.parse_args(f.read().split(), namespace)
