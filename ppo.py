@@ -23,6 +23,14 @@ class PPO(Agent):
         self.cov_var = torch.full(size=(args.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
 
+    def save(self, checkpoint_path):
+        self.actor.save(checkpoint_path + "_actor.nn")
+        self.critic.save(checkpoint_path + "_critic.nn")
+
+    def load(self, checkpoint_path):
+        self.actor.load(checkpoint_path + "_actor.nn")
+        self.critic.load(checkpoint_path + "_critic.nn")
+
     def get_action(self, state):
 
         # Query actor network for mean action

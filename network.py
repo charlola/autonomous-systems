@@ -22,6 +22,7 @@ class Net(nn.Module):
             if i != 0:
                 layers.append(activation())
             layers.append(nn.Linear(input_dim, output_dim))
+        
         self.net = nn.Sequential(*layers)
 
     # state = observation = obs
@@ -32,3 +33,11 @@ class Net(nn.Module):
             state = torch.tensor(state, dtype=torch.float)
 
         return self.net(state)
+
+    def save(self, checkpoint_path):
+        torch.save(self.state_dict(), checkpoint_path)
+
+    def load(self, checkpoint_path):
+        weight = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        self.load_state_dict(weight)
+        self.eval()

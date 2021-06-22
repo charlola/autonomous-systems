@@ -38,7 +38,7 @@ def episode(env, agent, nr_episode):
     return total_return
 
 
-def loop(agent, episodes):
+def loop(folder, agent, episodes):
 
     episode = 0
     batch   = 0
@@ -63,16 +63,18 @@ def loop(agent, episodes):
             logger["Critic Loss"].append(critic_loss)
             logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
 
-            if not args.no_interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
+            if args.interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
-
+        
         except KeyboardInterrupt:
             break
         except Exception as e:
             raise e
         #finally:
         #    agent.save(args.model)
-        
+    
+    agent.save(os.path.join(folder, "final"))
+
     return logger 
 
 def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
@@ -181,9 +183,8 @@ def trainable(hyperparameter):
     else:
         raise NotImplementedError
     
-
     # train agent
-    logger = loop(agent, args.episodes)
+    logger = loop(folder, agent, args.episodes)
     
     # plot results
     plot(folder, logger)
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     # collect arguments from command line
     args = commandline.collect_arguments()
 
-    if args.use_hyperparameter:
+    if args.tuning:
         analysis = tune.run(
             trainable,
             config=get_hyperparameter()

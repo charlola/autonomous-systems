@@ -12,13 +12,13 @@ def collect_arguments():
     parser = argparse.ArgumentParser(
         description='Define the parameter for Captain Wurmi')
     
-    # helper
-    parser.add_argument("-e", "--episodes",      default=10000,         type=int,      help="Define the number of episodes")
-    parser.add_argument("-g", "--graphics",      default=False,         type=str2bool, help="Define if graphics should be shown")
-    parser.add_argument("--env_name",            default="Pendulum-v0", type=str,      help="Define the environment")
-    parser.add_argument("--use_hyperparameter",  default=False,         type=str2bool, help="Define if hyperparamete training should be used")
-    parser.add_argument("-a", "--algorithm",     default="ppo",         type=str,      help="Define the algorithm ppo | a2c")
-    parser.add_argument("--no_interrupt",        default=False,         type=str2bool,      help="Define the algorithm ppo | a2c")
+    # program arguments
+    parser.add_argument("-e", "--episodes",     default=10000,          type=int,      help="Define the number of episodes")
+    parser.add_argument("-g", "--graphics",     default=False,          type=str2bool, help="Define if graphics should be shown")
+    parser.add_argument("-a", "--algorithm",    default="ppo",          type=str,      help="Define the algorithm ppo | a2c")
+    parser.add_argument("-n", "--env_name",     default="Pendulum-v0",  type=str,      help="Define the environment")
+    parser.add_argument("-t", "--tuning",       default=False,          type=str2bool, help="Define if hyperparameter tuning should be used")
+    parser.add_argument("-i", "--interrupt",    default=True,           type=str2bool, help="Define if the algorithm can be interrupted due to low std")
 
     # net
     parser.add_argument("--hidden_units",     default="64 64", type=str2list,  help="Hidden units as list separated by single space e.g. '64 64'")
