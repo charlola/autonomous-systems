@@ -10,8 +10,8 @@ class PPO(Agent):
         Agent.__init__(self, args)
         
         # Initialize actor and critic networks
-        self.actor  = Net(args.state_dim, args.hidden_units, args.act_dim)
-        self.critic = Net(args.state_dim, args.hidden_units, 1)
+        self.actor  = Net(args.state_dim, args.hidden_units, args.act_dim, args.activation)
+        self.critic = Net(args.state_dim, args.hidden_units, 1, args.activation)
 
         # Initialize optimizer
         self.actor_optim  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr)
@@ -74,8 +74,8 @@ class PPO(Agent):
         A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
         
         # default at 5 updates per iteration
-        for _ in range(self.args.k):
-
+        for _ in range(self.args.ppo_episodes):
+            
             # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
             V, current_log_probs, entropy = self.evaluate(states, actions)
 

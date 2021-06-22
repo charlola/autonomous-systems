@@ -5,6 +5,7 @@ sys.coinit_flags=2
 import matplotlib.pyplot as plt
 from ray import tune
 import numpy as np
+from torch import nn
 
 import environment
 import commandline
@@ -60,7 +61,7 @@ def loop(agent, episodes):
             logger["Critic Loss"].append(critic_loss)
             logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
 
-            if batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
+            if not args.no_interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
 
         except KeyboardInterrupt:
@@ -123,6 +124,7 @@ def get_hyperparameter():
         # "nr_hidden_units": tune.grid_search([64]),
         "gamma":            tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
         "hidden_units":     tune.grid_search([[64, 64], [64, 128], [128, 256]]),
+        "activation":       tune.grid_search([nn.ReLU, nn.Tanh]),
         # learning rate
         "clip":             tune.grid_search([0.2]),
         # define config/hyperparams for actor critic
@@ -130,7 +132,7 @@ def get_hyperparameter():
         "actor_lr":         tune.grid_search([0.005, 0.001]),
         "critic_lr":        tune.grid_search([0.005]),
         # number of times to update the actor-critic
-        "k":                tune.grid_search([4]),
+        "ppo_episodes":     tune.grid_search([4]),
         # number of steps to collect for each trajectory
         "batch_size":       tune.grid_search([4800]),
         "max_step":         tune.grid_search([1600]),  # 0.9 to 1
