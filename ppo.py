@@ -36,6 +36,9 @@ class PPO(Agent):
         action   = dist.sample()
         log_prob = dist.log_prob(action)
 
+        # clip action to action space bounds
+        action = torch.clip(action, min=self.args.action_low, max=self.args.action_high)
+
         # Return the sampled action and the log prob of that action
         # Note that I'm calling detach() since the action and log_prob
         # are tensors with computation graphs, so I want to get rid
