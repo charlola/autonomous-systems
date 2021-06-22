@@ -2,7 +2,7 @@ import argparse
 
 def collect_arguments():
     def str2bool(str):
-        if str.lower() in ["false", "f", "0"]:
+        if str.lower() in ["false", "f", "0", False]:
             return False
         return True
 
@@ -10,9 +10,10 @@ def collect_arguments():
         description='Define the parameter for Captain Wurmi')
     
     # helper
-    parser.add_argument("-e", "--episodes", default=100,        type=int,      help="Define the number of episodes")
-    parser.add_argument("-g", "--graphics", default=False,      type=str2bool, help="Define if graphics should be shown")
-    parser.add_argument("--env_name",       default="Pendulum-v0", type=str,      help="Define the environment")
+    parser.add_argument("-e", "--episodes",      default=100,           type=int,      help="Define the number of episodes")
+    parser.add_argument("-g", "--graphics",      default=False,         type=str2bool, help="Define if graphics should be shown")
+    parser.add_argument("--env_name",            default="Pendulum-v0", type=str,      help="Define the environment")
+    parser.add_argument("--use_hyper_parameter", default=False,         type=str2bool, help="Define the environment")
     
     # net
     parser.add_argument("--hidden_units", default=64, metavar='I', type=int, help="Number of hidden units")

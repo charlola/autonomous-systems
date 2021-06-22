@@ -54,6 +54,10 @@ def loop(agent, episodes):
 
         except KeyboardInterrupt:
             break
+        except Exception as e:
+            raise e
+        #finally:
+        #    agent.save(args.model)
         
     return logger 
 
@@ -87,13 +91,28 @@ def plot(logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
         axs[yi, xi].plot(x, y)
         axs[yi, xi].set_title(name)
 
+    plt.savefig("image.png")
     plt.show()
 
+
+def set_hyperparameter():
+
+    hyperparameter = {
+        #"gamma": raytune.grid_search[0.99, 0.95],
+        #...
+    }
+
+    # hyperparameter tuning
+    for key, value in hyperparameter.items():
+        setattr(args, key, value)
 
 if __name__ == "__main__":
 
     # collect arguments from command line
     args = commandline.collect_arguments()
+
+    if args.use_hyper_parameter:
+        set_hyperparameter()
     
     # load environment
     if args.env_name == "worm":
@@ -121,47 +140,9 @@ if __name__ == "__main__":
     # plot results
     plot(logger)
     
-
     if args.graphics:
         for i in range(3):
             episode(env, agent, i)
-
-
-    '''
-    hyperparams["env"] = env
-
-    # create agent
-    agent = PPOAgent(hyperparams)
-
-    # define 
-    returns = list()
-    running_reward = None
-    running_rewards = list()
-    try:
-        for i in range(args.episodes):
-            score = episode(env, agent, i, hyperparams)
-            if running_reward is None:
-                running_reward = score
-            running_reward = running_reward * 0.9 + score * 0.1
-            running_rewards.append(running_reward)
-            returns.append(score)
-    except KeyboardInterrupt:
-        pass
-    except Exception as e:
-        raise e
-    finally:
-        agent.save(args.model)
-
-    
-    x = range(len(running_rewards))
-    y = running_rewards
-
-    plt.plot(x,y)
-    plt.title("Progress")
-    plt.xlabel("episode")
-    plt.ylabel("undiscounted return")
-    plt.show()
-    '''
 
     # close environment
     env.close()
