@@ -124,6 +124,8 @@ if __name__ == "__main__":
     args.env = env
     args.state_dim = env.observation_space.shape[0]
     args.act_dim   = env.action_space.shape[0]
+    args.action_low  = env.action_space.low[0]
+    args.action_high = env.action_space.high[0]
 
     # create agent
     if args.algorithm == "ppo":

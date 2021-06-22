@@ -2,6 +2,7 @@
 .idea
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
+image.png
 
 
 # Byte-compiled / optimized / DLL files
