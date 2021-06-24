@@ -1,6 +1,8 @@
 import torch
 import numpy as np
 from torch.distributions import MultivariateNormal
+import os
+import pickle
 
 from network import Net
 from agent import Agent
@@ -23,13 +25,20 @@ class PPO(Agent):
         self.cov_var = torch.full(size=(args.act_dim,), fill_value=0.5)
         self.cov_mat = torch.diag(self.cov_var)
 
-    def save(self, checkpoint_path):
+    def save(self, checkpoint_path, logger):
         self.actor.save(checkpoint_path + "_actor.nn")
         self.critic.save(checkpoint_path + "_critic.nn")
+        with open(checkpoint_path + "_data.log", "wb") as f:
+            pickle.dump(logger, f)
 
-    def load(self, checkpoint_path):
+    def load(self, checkpoint_path, logger):
         self.actor.load(checkpoint_path + "_actor.nn")
         self.critic.load(checkpoint_path + "_critic.nn")
+
+        if os.path.isfile(checkpoint_path + "_data.log"):
+            with open(checkpoint_path + "_data.log", "rb") as f:
+                old_logger = pickle.load(f)
+            logger.update(old_logger)
 
     def get_action(self, state):
 
