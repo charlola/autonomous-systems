@@ -35,7 +35,7 @@ def collect_arguments():
     parser.add_argument("--ppo_episodes",     default=5,      type=int,   help="n_updates_per_iteration")
     parser.add_argument("--batch_size",       default=4800,   type=int,   help="timesteps_per_batch")
     parser.add_argument("--max_step",         default=1600,   type=int,   help="max_timesteps_per_episode")
-    parser.add_argument("--noise",              default=0.001,       type=float, help="Noise Factor")
+    parser.add_argument("--noise",            default=0,      type=float, help="Noise Factor") # 0.001
 
     ############################################################################
 

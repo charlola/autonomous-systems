@@ -24,7 +24,7 @@ class A2C(PPO):
         
         V, current_log_probs, entropy = self.evaluate(states, actions) 
 
-        actor_loss = (-current_log_probs * A_k).mean()
+        actor_loss = (-current_log_probs * A_k).mean() - self.args.noise * entropy
         critic_loss = self.mse(V, discounted_return)
         
         # Calculate gradients and perform backward propagation
@@ -57,7 +57,7 @@ class AdvancedA2C(AdvancedPPO):
         
         V, current_log_probs, entropy = self.evaluate(states, actions) 
 
-        actor_loss = (-current_log_probs * A_k).mean()
+        actor_loss = (-current_log_probs * A_k).mean() - self.args.noise * entropy
         critic_loss = self.mse(V, discounted_return)
         
         # Calculate gradients and perform backward propagation

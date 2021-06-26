@@ -36,7 +36,7 @@ class PPO(ActorCritic):
             surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A_k
 
             # Calculate actor and critic loss
-            actor_loss = -torch.min(surr1, surr2).mean() #- self.args.noise * entropy
+            actor_loss = -torch.min(surr1, surr2).mean() - self.args.noise * entropy
             critic_loss = self.mse(V, discounted_return)
 
             # Calculate gradients and perform backward propagation
@@ -79,7 +79,7 @@ class AdvancedPPO(AdvancedActorCritic):
             surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A_k
 
             # Calculate actor and critic loss
-            actor_loss = (-torch.min(surr1, surr2)).mean()
+            actor_loss = -torch.min(surr1, surr2).mean() - self.args.noise * entropy
             critic_loss = self.mse(V, discounted_return)
 
             # Calculate gradients and perform backward propagation
