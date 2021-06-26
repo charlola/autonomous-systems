@@ -37,7 +37,7 @@ class PPO(ActorCritic):
 
             # Calculate actor and critic loss
             actor_loss = -torch.min(surr1, surr2).mean() #- self.args.noise * entropy
-            critic_loss = torch.nn.MSELoss()(V, discounted_return)
+            critic_loss = self.mse(V, discounted_return)
 
             # Calculate gradients and perform backward propagation
             self.optimize(actor_loss, critic_loss)
@@ -80,7 +80,7 @@ class AdvancedPPO(AdvancedActorCritic):
 
             # Calculate actor and critic loss
             actor_loss = (-torch.min(surr1, surr2)).mean()
-            critic_loss = torch.nn.MSELoss()(V, discounted_return)
+            critic_loss = self.mse(V, discounted_return)
 
             # Calculate gradients and perform backward propagation
             self.optimize(actor_loss, critic_loss)

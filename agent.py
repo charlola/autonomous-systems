@@ -4,6 +4,8 @@ import numpy as np
 class Agent():
     def __init__(self, args):
         self.args = args 
+
+        self.mse = torch.nn.MSELoss()
     
     def get_action(self, state):
         #return action, log_prob

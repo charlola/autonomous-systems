@@ -25,7 +25,7 @@ class A2C(PPO):
         V, current_log_probs, entropy = self.evaluate(states, actions) 
 
         actor_loss = (-current_log_probs * A_k).mean()
-        critic_loss = torch.nn.MSELoss()(V, discounted_return)
+        critic_loss = self.mse(V, discounted_return)
         
         # Calculate gradients and perform backward propagation
         self.optimize(actor_loss, critic_loss)
@@ -58,7 +58,7 @@ class AdvancedA2C(AdvancedPPO):
         V, current_log_probs, entropy = self.evaluate(states, actions) 
 
         actor_loss = (-current_log_probs * A_k).mean()
-        critic_loss = torch.nn.MSELoss()(V, discounted_return)
+        critic_loss = self.mse(V, discounted_return)
         
         # Calculate gradients and perform backward propagation
         self.optimize(actor_loss, critic_loss)
