@@ -168,8 +168,8 @@ def trainable(hyperparameter):
         json.dump(hyperparameter, file, indent=4)
 
     # load environment
-    if args.env_name == "worm":
-        env = environment.load_env(no_graphics=not args.graphics)
+    if args.env_name in ["dynamic_worm", "static_worm"]:
+        env = environment.load_env(name=args.env_name, no_graphics=not args.graphics)
     else:
         env = environment.create_gym_env(args.env_name)
     

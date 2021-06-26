@@ -3,9 +3,10 @@ from gym_unity.envs import UnityToGymWrapper
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 import gym
 
-file_name="env_single/UnityEnvironment"
 
-def load_env(no_graphics=False):
+def load_env(name, no_graphics=False):
+    file_name="environments/" + name + "/UnityEnvironment"
+    
     engineConfigChannel = EngineConfigurationChannel()
     unity_env = UnityEnvironment(file_name, no_graphics=no_graphics, side_channels=[engineConfigChannel])
     engineConfigChannel.set_configuration_parameters(time_scale=20.)
