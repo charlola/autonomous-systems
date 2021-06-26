@@ -33,4 +33,4 @@ class A2C(PPO):
         avg_rewards = np.mean(sum_rewards)
         std_rewads  = np.std(sum_rewards)
 
-        return std_rewads, sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item()
+        return std_rewads, sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item(), entropy

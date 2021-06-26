@@ -15,7 +15,7 @@ def collect_arguments():
     # program arguments
     parser.add_argument("-e", "--episodes",     default=10000,          type=int,      help="Define the number of episodes")
     parser.add_argument("-g", "--graphics",     default=False,          type=str2bool, help="Define if graphics should be shown")
-    parser.add_argument("-a", "--algorithm",    default="ppo",          type=str,      help="Define the algorithm ppo | a2c")
+    parser.add_argument("-a", "--algorithm",    default="ppo",          type=str,      help="Define the algorithm ppo | appo |a2c")
     parser.add_argument("-n", "--env_name",     default="Pendulum-v0",  type=str,      help="Define the environment")
     parser.add_argument("-t", "--tuning",       default=False,          type=str2bool, help="Define if hyperparameter tuning should be used")
     parser.add_argument("-i", "--interrupt",    default=True,           type=str2bool, help="Define if the algorithm can be interrupted due to low std")
@@ -34,10 +34,10 @@ def collect_arguments():
     parser.add_argument("--ppo_episodes",     default=5,      type=int,   help="n_updates_per_iteration")
     parser.add_argument("--batch_size",       default=4800,   type=int,   help="timesteps_per_batch")
     parser.add_argument("--max_step",         default=1600,   type=int,   help="max_timesteps_per_episode")
+    parser.add_argument("--noise",              default=0.001,       type=float, help="Noise Factor")
 
     ############################################################################
 
-    parser.add_argument("--noise",              default=0.001,       type=float, help="Noise Factor")
     parser.add_argument("--critic_discount",    default=0.5,         type=float, help="Value Factor")
     parser.add_argument("--mode",               default="train",     type=str,   help='Mode to evaluate (train|test)')
     parser.add_argument("--model",              default="ppo.nn",    type=str,   help='Define the model to be used/overwritten')

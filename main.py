@@ -11,7 +11,7 @@ from urllib.parse import unquote
 
 import environment
 import commandline
-from ppo import PPO
+from ppo import PPO, AdvancedPPO
 from a2c import A2C
 
 
@@ -47,14 +47,15 @@ def loop(folder, agent, episodes, logger):
 
     while episode < episodes:
         try:
-            std_rewads, sum_rewards, avg_rewards, actor_loss, critic_loss = agent.learn()
+            std_rewads, sum_rewards, avg_rewards, actor_loss, critic_loss, entropy = agent.learn()
 
             # Add the number of rewards from rollout
             episode += len(sum_rewards)
             batch   += 1
 
-            pattern = "Batch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tStd {: >6.6f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f}"
-            print(pattern.format(batch, episode, avg_rewards, std_rewads, actor_loss, critic_loss))
+            if not args.tuning or batch % 10 == 0:
+                pattern = "\tBatch {: >4d} Episode {: >8d} \tRewards {: >12.2f} \tStd {: >6.6f} \tActor Loss {: >12.6f} \tCritic Loss {: >12.2f} \tEntropy {: >12.2f}"
+                print(pattern.format(batch, episode, avg_rewards, std_rewads, actor_loss, critic_loss, entropy))
             
             logger["Total Reward"].extend(sum_rewards)
             logger["Average Reward"].append(avg_rewards)
@@ -62,6 +63,7 @@ def loop(folder, agent, episodes, logger):
             logger["Actor Loss"].append(actor_loss)
             logger["Critic Loss"].append(critic_loss)
             logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
+            logger["Entropy"].append(entropy)
 
             if best is None or avg_rewards > best:
                 agent.save(os.path.join(folder, "best"), logger)
@@ -125,16 +127,16 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
 
 def get_hyperparameter():
     return {
-        # "nr_hidden_units": tune.grid_search([64]),
-        "gamma":            tune.grid_search([0.99, 0.95]),  # 0.99 (most common), 0.8 to 0.9997
-        "hidden_units":     tune.grid_search([[64, 64], [64, 128], [128, 256]]),
-        "activation":       tune.grid_search(["ReLU", "Tanh"]),
-        # learning rate
+        "algorithm":        tune.grid_search(["appo"]), # ,"ppo", "a2c"
+        "gamma":            tune.grid_search([0.99]), # 0.8, 0.95, 
+        "hidden_units":     tune.grid_search([[64, 64]]), # , [64, 128]
+        "activation":       tune.grid_search(["ReLU", "Tanh"]),#
         "clip":             tune.grid_search([0.2]),
         # define config/hyperparams for actor critic
         "critic_discount":  tune.grid_search([0.5]),
-        "actor_lr":         tune.grid_search([0.005, 0.001]),
-        "critic_lr":        tune.grid_search([0.005]),
+        # learning rate
+        "actor_lr":         tune.grid_search([0.003, 0.005]), #0.001, 
+        "critic_lr":        tune.grid_search([0.003, 0.005]),
         # number of times to update the actor-critic
         "ppo_episodes":     tune.grid_search([4]),
         # number of steps to collect for each trajectory
@@ -183,12 +185,14 @@ def trainable(hyperparameter):
     # create agent
     if args.algorithm == "ppo":
         agent = PPO(args)
+    elif args.algorithm == "appo":
+        agent = AdvancedPPO(args)
     elif args.algorithm == "a2c":
         agent = A2C(args)
     else:
         raise NotImplementedError
     
-    logger = logger = {name:[] for name in ["Total Reward", "Average Reward", "Std", "Avg Std", "Actor Loss", "Critic Loss"]}
+    logger = logger = {name:[] for name in ["Total Reward", "Average Reward", "Std", "Avg Std", "Actor Loss", "Critic Loss", "Entropy"]}
 
     if args.load is not None:
         agent.load(os.path.join(main_folder, args.load), logger)

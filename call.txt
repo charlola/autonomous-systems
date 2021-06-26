@@ -1,0 +1,2 @@
+main.py -e 50000 -i False -a ppo  --env_name worm --load run_004/final
+main.py -e 10000 -i False -a appo --env_name LunarLanderContinuous-v2 --activation Tanh --hidden_units "64 64" --actor_lr 0.001

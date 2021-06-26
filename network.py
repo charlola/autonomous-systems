@@ -2,12 +2,23 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 import numpy as np
+from torch.distributions import MultivariateNormal
 
+class BaseNet(nn.Module):
+    def __init__(self):
+        super(BaseNet, self).__init__()
 
-# Net = FeedForwardNN
-class Net(nn.Module):
+    def save(self, checkpoint_path):
+        torch.save(self.state_dict(), checkpoint_path)
+
+    def load(self, checkpoint_path):
+        weight = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        self.load_state_dict(weight)
+        self.eval()
+
+class Net(BaseNet):
     def __init__(self, in_dim, hidden_units, out_dim, activation):
-        super(Net, self).__init__()
+        BaseNet.__init__(self)
 
         # get activation function
         activation = getattr(nn, activation)
@@ -24,20 +35,28 @@ class Net(nn.Module):
             layers.append(nn.Linear(input_dim, output_dim))
         
         self.net = nn.Sequential(*layers)
+        
+class ActorNet(BaseNet):
+    def __init__(self, in_dim, hidden_units, out_dim, activation):
+        BaseNet.__init__(self)
 
-    # state = observation = obs
-    def forward(self, state):
+        # get activation function
+        activation = getattr(nn, activation)
 
-        # convert state to tensor if it's a numpy array
-        if isinstance(state, np.ndarray):
-            state = torch.tensor(state, dtype=torch.float)
+        units = [in_dim] 
+        for unit in hidden_units:
+            units += [unit, unit]
+        
+        layers = list()
+        for input_dim, output_dim in zip(*[iter(units)]*2):
+            layers.append(nn.Linear(input_dim, output_dim))
+            layers.append(activation())
+        
+        self.net = nn.Sequential(*layers)
 
-        return self.net(state)
-
-    def save(self, checkpoint_path):
-        torch.save(self.state_dict(), checkpoint_path)
-
-    def load(self, checkpoint_path):
-        weight = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
-        self.load_state_dict(weight)
-        self.eval()
+        self.mean = nn.Linear(units[-1], out_dim)
+        self.mean.weight.data.fill_(1e-5)
+        self.mean.bias.data.fill_(1e-5)
+        self.std = nn.Linear(units[-1], out_dim)
+        self.std.weight.data.fill_(1e-5)
+        self.std.bias.data.fill_(1e-5)
