@@ -42,8 +42,8 @@ class Agent():
             state = self.args.env.reset()
             done = False
 
-            # default 1600
-            for ep_t in range(self.args.max_step):
+            ep_t = 0
+            while True:
 
                 # Increment timesteps for this batch
                 t += 1
@@ -63,19 +63,20 @@ class Agent():
 
                 state = next_state
 
-                if done:
-                    # apply zero padding
-                    def create(sample):
-                        if type(sample) == int: return 0
-                        else: return np.zeros_like(sample)
-                    
-                    for ep_t in range(self.args.max_step - (ep_t + 1)):
-                        ep_states.insert(0,     create(state))
-                        ep_actions.insert(0,    create(action))
-                        ep_log_probs.insert(0,  0)
-                        ep_rewards.insert(0,    0)
-                   
+                if done or (self.args.max_step > 0 and ep_t >= self.args.max_step):
                     break
+
+            if self.args.max_step > 0:
+                # apply zero padding
+                def create(sample):
+                    if type(sample) == int: return 0
+                    else: return np.zeros_like(sample)
+                
+                for ep_t in range(self.args.max_step - (ep_t + 1)):
+                    ep_states.insert(0,     create(state))
+                    ep_actions.insert(0,    create(action))
+                    ep_log_probs.insert(0,  0)
+                    ep_rewards.insert(0,    0)
 
             # Add summed rewards to list
             sum_rewards.append(sum(ep_rewards))
