@@ -143,3 +143,5 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 image.png
+environments/dynamic_worm/UnityEnvironment_Data/ML-Agents/Timers/WormDynamicTarget_timers.json
+.gitignore

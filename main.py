@@ -7,12 +7,11 @@ from ray import tune
 import numpy as np
 from torch import nn
 import json
-from urllib.parse import unquote
 
 import environment
 import commandline
 from ppo import PPO, AdvancedPPO
-from a2c import A2C
+from a2c import A2C, AdvancedA2C
 
 
 def episode(env, agent, nr_episode):
@@ -25,6 +24,7 @@ def episode(env, agent, nr_episode):
         env.render()
         # 1. Select action according to policy
         action = agent.policy(state)
+        print(action)
         # 2. Execute selected action
         next_state, reward, done, _ = env.step(action)
         # 3. Integrate new experience into agent
@@ -122,6 +122,7 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
         axs[yi, xi].set_title(name)
 
     plt.savefig(os.path.join(folder, "image.png"))
+    
     if args.graphics:
         plt.show()
 
@@ -157,15 +158,6 @@ def trainable(hyperparameter):
             setattr(args, key, value)
     else:
         hyperparameter = {name: getattr(args, name) for name in hyperparameter if name != "mlflow"}
-            
-    # define target folder
-    main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
-    folder = os.path.join(main_folder, "run_%03d" % len(listdir(main_folder + "/run_*")))
-    os.makedirs(folder, exist_ok=True)
-
-    # store settings
-    with open(os.path.join(folder, "settings.json"), "w") as file:
-        json.dump(hyperparameter, file, indent=4)
 
     # load environment
     if args.env_name in ["dynamic_worm", "static_worm"]:
@@ -189,23 +181,37 @@ def trainable(hyperparameter):
         agent = AdvancedPPO(args)
     elif args.algorithm == "a2c":
         agent = A2C(args)
+    elif args.algorithm == "aa2c":
+        agent = AdvancedA2C(args)
     else:
         raise NotImplementedError
     
     logger = logger = {name:[] for name in ["Total Reward", "Average Reward", "Std", "Avg Std", "Actor Loss", "Critic Loss", "Entropy"]}
 
+    # define target folder
+    main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
+    
+
     if args.load is not None:
         agent.load(os.path.join(main_folder, args.load), logger)
 
-    # train agent
-    loop(folder, agent, args.episodes, logger)
-    
-    # plot results
-    plot(folder, logger)
-    
-    if args.graphics:
-        # load best model
-        agent.load(os.path.join(folder, "best"), logger)
+    if args.mode == "train":
+        # create new folder for current training 
+        folder = os.path.join(main_folder, "run_%03d" % len(listdir(main_folder + "/run_*")))
+        os.makedirs(folder, exist_ok=True)
+
+        # store settings
+        with open(os.path.join(folder, "settings.json"), "w") as file:
+            json.dump(hyperparameter, file, indent=4)
+            
+            # train agent
+        loop(folder, agent, args.episodes, logger)
+        
+        # plot results
+        plot(folder, logger)
+    else:
+        if args.load is None:
+            raise Exception("No model selected! use --load run_<id>/<name> to do this")
 
         # show 3 examples of best episode
         for i in range(3):
