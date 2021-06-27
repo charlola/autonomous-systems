@@ -120,6 +120,11 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
             axs[yi, xi].fill_between(x, y-std, y+std, alpha = 0.5)
 
         axs[yi, xi].set_title(name)
+    # Adding headline with hyperparams to plot
+    fig.suptitle('Env: {environment}, Algorithm: {algorithm}\n Gamma: {gamma}, Critic_Lr: {crit_lr}, '
+                 'Actor_Lr: {act_lr},\n Activation_func: {activation_function}, Clip: {clip}'.format(
+        environment=args.env_name, algorithm=args.algorithm, gamma=args.gamma, crit_lr=args.critic_lr,
+        act_lr=args.actor_lr,  activation_function=args.activation, clip=args.clip), fontsize=16)
 
     plt.savefig(os.path.join(folder, "image.png"))
     
