@@ -89,7 +89,7 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
     rows = int((columns-1+len(logger))/columns)
 
     # create subplots
-    fig, axs = plt.subplots(rows, columns, figsize=(10, 6), constrained_layout=True)
+    fig, axs = plt.subplots(rows, columns, figsize=(14, 10), constrained_layout=True)
     
     # create plot for every entry in the logger
     for i, (name, values) in enumerate(logger.items()):
