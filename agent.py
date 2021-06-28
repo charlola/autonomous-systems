@@ -47,6 +47,7 @@ class Agent():
 
                 # Increment timesteps for this batch
                 t += 1
+                ep_t += 1
 
                 # Get action 
                 action, log_prob = self.get_action(state)
@@ -72,7 +73,7 @@ class Agent():
                     if type(sample) == int: return 0
                     else: return np.zeros_like(sample)
                 
-                for ep_t in range(self.args.max_step - (ep_t + 1)):
+                for ep_t in range(self.args.max_step - ep_t):
                     ep_states.insert(0,     create(state))
                     ep_actions.insert(0,    create(action))
                     ep_log_probs.insert(0,  0)
