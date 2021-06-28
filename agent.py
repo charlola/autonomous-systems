@@ -50,6 +50,7 @@ class Agent(ABC):
 
                 # Increment timesteps for this batch
                 t += 1
+                ep_t += 1
 
                 # Get action 
                 action, log_prob = self.model.get_action(state)
@@ -68,14 +69,18 @@ class Agent(ABC):
 
                 if done or (self.args.max_step > 0 and ep_t >= self.args.max_step):
                     break
+            
+            padding = self.args.max_step - ep_t
 
-            if self.args.max_step > 0:
+            if padding > 0 and self.args.max_step > 0:
+                print("Insert zero padding x", padding)
+
                 # apply zero padding
                 def create(sample):
                     if type(sample) == int: return 0
                     else: return np.zeros_like(sample)
                 
-                for ep_t in range(self.args.max_step - (ep_t + 1)):
+                for _ in range(padding):
                     ep_states.insert(0,     create(state))
                     ep_actions.insert(0,    create(action))
                     ep_log_probs.insert(0,  0)
