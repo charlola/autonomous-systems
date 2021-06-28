@@ -85,6 +85,7 @@ class Agent(ABC):
         actions     = torch.tensor(actions,     dtype=torch.float)
         log_probs   = torch.tensor(log_probs,   dtype=torch.float)
         rewards     = torch.tensor(rewards,     dtype=torch.float)
+        dones       = torch.tensor(dones,       dtype=torch.float)
 
         # Return batch data
         return states, next_states, actions, log_probs, rewards, dones, sum_rewards, discounted_return
