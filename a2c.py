@@ -1,71 +1,14 @@
-import torch
-import numpy as np
+from actorcritic import ActorCritic
 
-from ppo import PPO, AdvancedPPO
 
-class A2C(PPO):
+class A2C(ActorCritic):
     def __init__(self, args):
-        PPO.__init__(self, args)
+        args.ppo_episodes = 1
+        args.batch_size   = 1
+        ActorCritic.__init__(self, args)
 
-    def learn(self):
+    def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
+        return (-current_log_probs * A_k).mean() - self.args.noise * entropy
 
-        # Perform rollout to get batches
-        states, actions, log_probs, rewards, sum_rewards, discounted_return = self.rollout()
-
-        # Evaluate state and actions
-        V, _, entropy = self.evaluate(states, actions)
-
-        # Calculate Advantage
-        A_k = discounted_return - V.detach()
-
-        if self.args.normalize:
-            # Normalize Advantages (Trick: makes PPO more stable)
-            # Subtracting 1e-10, so there will be no possibility of dividing by 0
-            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
-        
-        V, current_log_probs, entropy = self.evaluate(states, actions) 
-
-        actor_loss = (-current_log_probs * A_k).mean() - self.args.noise * entropy
-        critic_loss = self.mse(V, discounted_return)
-        
-        # Calculate gradients and perform backward propagation
-        self.optimize(actor_loss, critic_loss)
-        
-        avg_rewards = np.mean(sum_rewards)
-        std_rewads  = np.std(sum_rewards)
-
-        return std_rewads, sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item(), entropy
-
-
-class AdvancedA2C(AdvancedPPO):
-    def __init__(self, args):
-        AdvancedPPO.__init__(self, args)
-
-    def learn(self):
-
-        # Perform rollout to get batches
-        states, actions, log_probs, rewards, sum_rewards, discounted_return = self.rollout()
-
-        # Evaluate state and actions
-        V, _, entropy = self.evaluate(states, actions)
-
-        # Calculate Advantage
-        A_k = discounted_return - V.detach()
-
-        if self.args.normalize:
-            # Normalize Advantages (Trick: makes PPO more stable)
-            # Subtracting 1e-10, so there will be no possibility of dividing by 0
-            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
-        
-        V, current_log_probs, entropy = self.evaluate(states, actions) 
-
-        actor_loss = (-current_log_probs * A_k).mean() - self.args.noise * entropy
-        critic_loss = self.mse(V, discounted_return)
-        
-        # Calculate gradients and perform backward propagation
-        self.optimize(actor_loss, critic_loss)
-        
-        avg_rewards = np.mean(sum_rewards)
-        std_rewads  = np.std(sum_rewards)
-
-        return std_rewads, sum_rewards, avg_rewards, actor_loss.item(), critic_loss.item(), entropy
+    def get_critic_loss(self, V, rewards, discounted_return):
+        return self.mse(V, discounted_return)

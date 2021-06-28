@@ -10,9 +10,8 @@ import json
 
 import environment
 import commandline
-from ppo import PPO, AdvancedPPO
-from a2c import A2C, AdvancedA2C
-
+from ppo import PPO
+from a2c import A2C
 
 def episode(env, agent, nr_episode):
     state = env.reset()
@@ -66,12 +65,12 @@ def loop(folder, agent, episodes, logger):
             logger["Entropy"].append(entropy)
 
             if best is None or avg_rewards > best:
-                agent.save(os.path.join(folder, "best"), logger)
+                agent.model.save(os.path.join(folder, "best"), logger)
                 best = avg_rewards
 
             if batch > 0 and batch % args.checkpoints == 0:
                 checkpoint = int(batch / args.checkpoints)
-                agent.save(os.path.join(folder, "checkpoint_%02d" % checkpoint), logger)
+                agent.model.save(os.path.join(folder, "checkpoint_%02d" % checkpoint), logger)
 
             if args.interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
@@ -81,7 +80,7 @@ def loop(folder, agent, episodes, logger):
         except Exception as e:
             raise e
     
-    agent.save(os.path.join(folder, "final"), logger)
+    agent.model.save(os.path.join(folder, "final"), logger)
 
 def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
     
@@ -166,7 +165,7 @@ def trainable(hyperparameter):
 
     # load environment
     if args.env_name in ["dynamic_worm", "static_worm"]:
-        env = environment.load_env(name=args.env_name, no_graphics=not args.graphics)
+        env = environment.load_env(name=args.env_name, no_graphics=(args.mode == "train"))
     else:
         env = environment.create_gym_env(args.env_name)
     
@@ -180,14 +179,10 @@ def trainable(hyperparameter):
         args.max_step = env._max_episode_steps
 
     # create agent
-    if args.algorithm == "ppo":
+    if args.algorithm in ["ppo", "appo"]:
         agent = PPO(args)
-    elif args.algorithm == "appo":
-        agent = AdvancedPPO(args)
-    elif args.algorithm == "a2c":
+    elif args.algorithm in ["a2c", "aa2c"]:
         agent = A2C(args)
-    elif args.algorithm == "aa2c":
-        agent = AdvancedA2C(args)
     else:
         raise NotImplementedError
     
@@ -198,7 +193,7 @@ def trainable(hyperparameter):
     
 
     if args.load is not None:
-        agent.load(os.path.join(main_folder, args.load), logger)
+        agent.model.load(os.path.join(main_folder, args.load), logger)
 
     if args.mode == "train":
         # create new folder for current training 

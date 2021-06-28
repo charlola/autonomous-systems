@@ -1,11 +1,14 @@
+from abc import ABC
+
 import torch
 import numpy as np
 
-class Agent():
-    def __init__(self, args):
+class Agent(ABC):
+    def __init__(self, args, model):
         self.args = args 
 
         self.mse = torch.nn.MSELoss()
+        self.model = model
     
     def get_action(self, state):
         #return action, log_prob
@@ -49,7 +52,7 @@ class Agent():
                 t += 1
 
                 # Get action 
-                action, log_prob = self.get_action(state)
+                action, log_prob = self.model.get_action(state)
 
                 # done is limited to 200 steps due to gym.make -> ep_t breaks after 200
                 # so increment of t is in 200 steps
