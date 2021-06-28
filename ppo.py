@@ -18,9 +18,10 @@ class PPO(ActorCritic):
         # Calculate Advantage
         A_k = discounted_return - V.detach()
 
-        # Normalize Advantages (Trick: makes PPO more stable)
-        # Subtracting 1e-10, so there will be no possibility of dividing by 0
-        A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+        if self.args.normalize:
+            # Normalize Advantages (Trick: makes PPO more stable)
+            # Subtracting 1e-10, so there will be no possibility of dividing by 0
+            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
         
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
@@ -61,9 +62,10 @@ class AdvancedPPO(AdvancedActorCritic):
         # Calculate Advantage
         A_k = discounted_return - V.detach()
 
-        # Normalize Advantages (Trick: makes PPO more stable)
-        # Subtracting 1e-10, so there will be no possibility of dividing by 0
-        A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+        if self.args.normalize:
+            # Normalize Advantages (Trick: makes PPO more stable)
+            # Subtracting 1e-10, so there will be no possibility of dividing by 0
+            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
         
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
