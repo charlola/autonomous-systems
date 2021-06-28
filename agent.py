@@ -23,10 +23,12 @@ class Agent(ABC):
     def rollout(self):
         
         # Batch data
-        states    = []
-        actions   = []
-        log_probs = []
-        rewards   = []
+        states      = []
+        next_states = []
+        actions     = []
+        log_probs   = []
+        rewards     = []
+        dones       = []
 
         # Number of timesteps run so far in this batch
         t = 0
@@ -36,16 +38,12 @@ class Agent(ABC):
 
         # default 4800
         while t < self.args.batch_size:
-
-            # Rewards this episode
-            ep_states    = []
-            ep_actions   = []
-            ep_log_probs = []
-            ep_rewards = []
+            
             state = self.args.env.reset()
             done = False
 
             ep_t = 0
+            ep_reward = 0
             while True:
 
                 # Increment timesteps for this batch
@@ -54,73 +52,56 @@ class Agent(ABC):
 
                 # Get action 
                 action, log_prob = self.model.get_action(state)
-
-                # done is limited to 200 steps due to gym.make -> ep_t breaks after 200
-                # so increment of t is in 200 steps
+                
+                # Execute step
                 next_state, reward, done, _ = self.args.env.step(action)
 
+                # Accumulate reward
+                ep_reward += reward
+
                 # Collect observation (state), reward, action, and log prob
-                ep_states.append(state)
-                ep_rewards.append(reward)
-                ep_actions.append(action)
-                ep_log_probs.append(log_prob)
+                states.append(state)
+                next_states.append(next_state)
+                rewards.append(reward)
+                actions.append(action)
+                log_probs.append(log_prob)
 
                 state = next_state
 
                 if done or (self.args.max_step > 0 and ep_t >= self.args.max_step):
+                    dones.append(True)
+                    # Add summed rewards to list
+                    sum_rewards.append(ep_reward)
                     break
-            
-            padding = self.args.max_step - ep_t
-
-            if padding > 0 and self.args.max_step > 0:
-                print("Insert zero padding x", padding)
-
-                # apply zero padding
-                def create(sample):
-                    if type(sample) == int: return 0
-                    else: return np.zeros_like(sample)
-                
-                for _ in range(padding):
-                    ep_states.insert(0,     create(state))
-                    ep_actions.insert(0,    create(action))
-                    ep_log_probs.insert(0,  0)
-                    ep_rewards.insert(0,    0)
-
-            # Add summed rewards to list
-            sum_rewards.append(sum(ep_rewards))
-
-            # Collect episodic rewards
-            rewards.append(ep_rewards)
-            states.extend(ep_states)
-            actions.extend(ep_actions)
-            log_probs.extend(ep_log_probs)
-
+                else:
+                    dones.append(False)
+        
         # calculate discounted return
-        discounted_return = self.compute_rewards_togo(rewards)
+        discounted_return = self.compute_discounted_rewards(rewards, dones)
 
         # Reshape data as tensors
-        states            = torch.tensor(states,            dtype=torch.float)
-        actions           = torch.tensor(actions,           dtype=torch.float)
-        log_probs         = torch.tensor(log_probs,         dtype=torch.float)
-        rewards           = torch.tensor(rewards,           dtype=torch.float)
-        discounted_return = torch.tensor(discounted_return, dtype=torch.float)
+        states      = torch.tensor(states,      dtype=torch.float)
+        next_states = torch.tensor(next_states, dtype=torch.float)
+        actions     = torch.tensor(actions,     dtype=torch.float)
+        log_probs   = torch.tensor(log_probs,   dtype=torch.float)
+        rewards     = torch.tensor(rewards,     dtype=torch.float)
 
         # Return batch data
-        return states, actions, log_probs, rewards, sum_rewards, discounted_return
+        return states, next_states, actions, log_probs, rewards, dones, sum_rewards, discounted_return
 
-    def compute_rewards_togo(self, batch_rewards):
+    def compute_discounted_rewards(self, rewards, dones):
+        discounted_rewards = []
+        discounted_reward = 0
+        for reward, done in zip(reversed(rewards), reversed(dones)):
+            if done:
+                discounted_reward = 0
+            discounted_reward = reward + (self.args.gamma * discounted_reward)
+            discounted_rewards.insert(0, discounted_reward)
 
-        # The rewards-to-go (rtg) per episode per batch to return.
-        # The shape will be (num timesteps per episode)
-        batch_rewards_togo = []
+        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float)
 
-        # Iterate through each episode backwards to maintain same order in batch_rtgs
-        for ep_rewards in reversed(batch_rewards):
-
-            # The discounted reward so far
-            discounted_reward = 0
-            for rew in reversed(ep_rewards):
-                discounted_reward = rew + discounted_reward * self.args.gamma
-                batch_rewards_togo.insert(0, discounted_reward)
-
-        return batch_rewards_togo
+        # Normalizing the rewards:
+        if self.args.normalize == "reward":
+            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-5)
+        
+        return discounted_rewards

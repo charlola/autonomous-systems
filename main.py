@@ -46,7 +46,14 @@ def loop(folder, agent, episodes, logger):
 
     while episode < episodes:
         try:
-            std_rewads, sum_rewards, avg_rewards, actor_loss, critic_loss, entropy = agent.learn()
+            # Perform rollout to get batches
+            states, next_states, actions, log_probs, rewards, dones, sum_rewards, discounted_return = agent.rollout()
+
+            # Perform updated and learn from rollout
+            actor_loss, critic_loss, entropy = agent.learn(states, next_states, actions, log_probs, rewards, dones, discounted_return)
+
+            avg_rewards = np.mean(sum_rewards)
+            std_rewads  = np.std(sum_rewards)
 
             # Add the number of rewards from rollout
             episode += len(sum_rewards)
