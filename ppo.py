@@ -17,7 +17,7 @@ class PPO(ActorCritic):
         surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A_k
 
         # Calculate actor and critic loss
-        actor_loss = -torch.min(surr1, surr2).mean() - self.args.noise * entropy
+        actor_loss = -torch.min(surr1, surr2).mean() + self.args.noise * entropy
 
         return actor_loss
 

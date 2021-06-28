@@ -8,7 +8,7 @@ class A2C(ActorCritic):
         ActorCritic.__init__(self, args)
 
     def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
-        return (-current_log_probs * A_k).sum() - self.args.noise * entropy
+        return (-current_log_probs * A_k).sum() + self.args.noise * entropy
 
     def get_critic_loss(self, V, rewards, discounted_return):
         return self.mse(V, discounted_return)
