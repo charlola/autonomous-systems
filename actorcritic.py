@@ -32,7 +32,7 @@ class ActorCritic(Agent):
         elif self.args.advantage == "temporal":
             has_next = torch.logical_xor(dones, torch.ones_like(dones)) 
             V_next, _, _ = self.model.evaluate(next_states, actions)
-            A_k = discounted_return + V_next * self.args.gamma * has_next - V.detach()
+            A_k = discounted_return + V_next.detach() * self.args.gamma * has_next - V.detach()
         else:
             A_k = discounted_return - V.detach()
 
