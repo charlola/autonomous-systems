@@ -154,9 +154,9 @@ def get_hyperparameter():
         "critic_lr": tune.grid_search([1e-5]),  # Dominik|Georg (1e-4) Patrick|Alex (1e-5) Oli (1e-5) Lotte (1e-6)
         "noise": tune.grid_search([0, 0.001]),
 
-        "advantage": tune.grid_search(["advantage"]),  # temporal ?
-        "normalize": tune.grid_search(["advantage", "reward"]),
-        "batch_size": tune.grid_search([5000]),
+        "advantage":        tune.grid_search(["advantage"]), # temporal ?
+        "normalize":        tune.grid_search(["advantage", "reward", "none"]),
+        "batch_size":       tune.grid_search([5000]),
 
         # PPO (für aa2c auskommentieren)
         "clip": tune.grid_search([0.2]),  # 0.1 ?
