@@ -7,6 +7,7 @@ from ray import tune
 import numpy as np
 from torch import nn
 import json
+import torch
 
 import environment
 import commandline
@@ -182,6 +183,9 @@ def trainable(hyperparameter):
     else:
         env = environment.create_gym_env(args.env_name)
     
+    # set device
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     # collect env information in args
     args.env = env
     args.state_dim = env.observation_space.shape[0]
