@@ -156,7 +156,7 @@ def get_hyperparameter():
         "noise":            tune.grid_search([0, 0.001]),
 
         "advantage":        tune.grid_search(["advantage"]), # temporal ?
-        "normalize":        tune.grid_search(["advantage", "reward"]),
+        "normalize":        tune.grid_search(["advantage", "reward", "none"]),
         "batch_size":       tune.grid_search([5000]),
 
         # PPO (für aa2c auskommentieren)
