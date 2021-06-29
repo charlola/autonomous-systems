@@ -2,10 +2,11 @@ from mlagents_envs.environment import UnityEnvironment
 from gym_unity.envs import UnityToGymWrapper
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfigurationChannel
 import gym
+import os 
 
 
 def load_env(name, no_graphics=False):
-    file_name="environments/" + name + "/UnityEnvironment"
+    file_name = os.path.abspath("environments/" + name + "/UnityEnvironment")
 
     if no_graphics:
 
