@@ -3,7 +3,6 @@ import numpy as np
 
 class A2C(ActorCritic):
     def __init__(self, args):
-        args.batch_size = 1
         ActorCritic.__init__(self, args)
 
     def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
