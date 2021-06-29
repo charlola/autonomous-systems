@@ -139,22 +139,28 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
 
 def get_hyperparameter():
     return {
-        "algorithm":        tune.grid_search(["appo"]), # ,"ppo", "a2c"
+        "algorithm":        tune.grid_search(["appo"]), # "aa2c","ppo", "a2c"
         "gamma":            tune.grid_search([0.99]), # 0.8, 0.95, 
         "hidden_units":     tune.grid_search([[64, 64]]), # , [64, 128]
-        "activation":       tune.grid_search(["ReLU", "Tanh"]),#
-        "clip":             tune.grid_search([0.2]),
+        "activation":       tune.grid_search(["Tanh"]),#"ReLU", 
         # define config/hyperparams for actor critic
-        "critic_discount":  tune.grid_search([0.5]),
+        
         # learning rate
-        "actor_lr":         tune.grid_search([0.003, 0.005]), #0.001, 
-        "critic_lr":        tune.grid_search([0.003, 0.005]),
+        "actor_lr":         tune.grid_search([1e-4]), #0.001, , 0.0001, 0.001
+        "critic_lr":        tune.grid_search([1e-4]), #0.001, 0.005
+        "noise":            tune.grid_search([0, 0.001]),
+
+        "advantage":        tune.grid_search(["temporal", "advantage"]),
+        "normalize":        tune.grid_search(["advantage", "reward"]),
+
+        # PPO
+        "clip":             tune.grid_search([0.1, 0.2]),
         # number of times to update the actor-critic
         "ppo_episodes":     tune.grid_search([4]),
         # number of steps to collect for each trajectory
-        "batch_size":       tune.grid_search([4800]),
-        "max_step":         tune.grid_search([1600]),  # 0.9 to 1
-
+        "batch_size":       tune.grid_search([5000]),
+        "mini_batch_size":  tune.grid_search([0, 128, 1000]),
+        
         # config for mlflow logging
         "mlflow": {
             "experiment_name": "ppo",

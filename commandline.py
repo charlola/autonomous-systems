@@ -35,15 +35,13 @@ def collect_arguments():
     parser.add_argument("--ppo_episodes",     default=5,            type=int,   help="n_updates_per_iteration")
     parser.add_argument("--batch_size",       default=4800,         type=int,   help="timesteps_per_batch")
     parser.add_argument("--mini_batch_size",  default=32,           type=int,   help="mini batches each ppo episode")
-    parser.add_argument("--max_step",         default=1600,         type=int,   help="max_timesteps_per_episode")
+    parser.add_argument("--max_step",         default=1000,         type=int,   help="max_timesteps_per_episode")
     parser.add_argument("--noise",            default=0,            type=float, help="Noise Factor") # 0.001
     parser.add_argument("--normalize",        default="advantage",  type=str,   help="Define what should normalized")
     parser.add_argument("--advantage",        default="advantage",  type=str,   help="Choose the advantage function (reinforce | temporal | advantage)")
 
     ############################################################################
-
-    parser.add_argument("--critic_discount",    default=0.5,         type=float, help="Value Factor")
-    parser.add_argument("--model",              default="ppo.nn",    type=str,   help='Define the model to be used/overwritten')
+    
     parser.add_argument("--max_grad_norm",      default=0.5,         type=int,   help="Maximum of gradient")
     
     return parser.parse_args()
