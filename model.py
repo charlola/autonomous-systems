@@ -76,7 +76,7 @@ class BaseModel(ABC):
     def get_action(self, states):
         # convert state to tensor if it's a numpy array
         if isinstance(states, np.ndarray):
-            states = torch.tensor(states, dtype=torch.float)
+            states = torch.tensor(states, dtype=torch.float, device=self.args.device)
 
         # Creating Multivariate Normal Distribution
         dist = self.distribution(states)
@@ -90,12 +90,12 @@ class BaseModel(ABC):
         # are tensors with computation graphs, so I want to get rid
         # of the graph and just convert the action to numpy array.
         # log prob as tensor is fine.
-        return action.detach().numpy(), log_prob.detach()
+        return action.detach().cpu().numpy(), log_prob.detach()
 
     def evaluate(self, states, actions):
         # convert state to tensor if it's a numpy array
         if isinstance(states, np.ndarray):
-            states = torch.tensor(states, dtype=torch.float)
+            states = torch.tensor(states, dtype=torch.float, device=self.args.device)
 
         # Creating Multivariate Normal Distribution
         dist      = self.distribution(states)
@@ -114,8 +114,8 @@ class Model(BaseModel):
         self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation)
 
         # Initialize optimizer
-        self.actor_optimizer  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr,  device=self.args.device)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr, device=self.args.device)
+        self.actor_optimizer  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr)
 
         # Create our variable for the matrix
         # Chose 0.5 for standarddeviation
@@ -144,8 +144,8 @@ class AdvancedModel(BaseModel):
         BaseModel.__init__(self, args)
 
         # Initialize actor and critic networks
-        self.actor  = ActorNet(args.device, args.state_dim, args.hidden_units, args.act_dim, args.activation)
-        self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation)
+        self.actor  = ActorNet(args.device, args.state_dim, args.hidden_units, args.act_dim, args.activation).to(device=args.device)
+        self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation).to(device=args.device)
 
         # Initialize optimizer
         self.actor_optimizer  = torch.optim.Adam(list(self.actor.net.parameters()) + list(self.actor.mean.parameters()) + list(self.actor.std.parameters()), lr=args.actor_lr)
