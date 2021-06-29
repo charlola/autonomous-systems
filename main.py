@@ -91,6 +91,10 @@ def loop(folder, agent, episodes, logger):
     agent.model.save(os.path.join(folder, "final"), logger)
 
 def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
+
+    # remove std from graphics
+    del logger["Avg Std"]
+    del logger["Std"]
     
     # calculate number of culumns
     rows = int((columns-1+len(logger))/columns)
@@ -140,27 +144,27 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
 
 def get_hyperparameter():
     return {
-        "algorithm":        tune.grid_search(["appo"]), # "aa2c","ppo", "a2c"
-        "gamma":            tune.grid_search([0.99]), # 0.8, 0.95, 
-        "hidden_units":     tune.grid_search([[64, 64]]), # , [64, 128]
-        "activation":       tune.grid_search(["Tanh"]),#"ReLU", 
+        "algorithm":        tune.grid_search(["appo"]),     # Olli|Patrick|Dominik|Lotte (appo) Alex|Georg (aa2c)
+        "gamma":            tune.grid_search([0.99]),       
+        "hidden_units":     tune.grid_search([[64, 64]]),   # [64, 128] ?
+        "activation":       tune.grid_search(["Tanh"]),     # ReLU ?
         # define config/hyperparams for actor critic
         
         # learning rate
-        "actor_lr":         tune.grid_search([1e-4]), #0.001, , 0.0001, 0.001
-        "critic_lr":        tune.grid_search([1e-4]), #0.001, 0.005
+        "actor_lr":         tune.grid_search([1e-4]), #Dominik|Georg (1e-4) Patrick|Alex (1e-4) Oli (1e-5) Lotte (1e-5)
+        "critic_lr":        tune.grid_search([1e-4]), #Dominik|Georg (1e-4) Patrick|Alex (1e-5) Oli (1e-5) Lotte (1e-6)
         "noise":            tune.grid_search([0, 0.001]),
 
-        "advantage":        tune.grid_search(["temporal", "advantage"]),
+        "advantage":        tune.grid_search(["advantage"]), # temporal ?
         "normalize":        tune.grid_search(["advantage", "reward"]),
+        "batch_size":       tune.grid_search([5000]),
 
-        # PPO
-        "clip":             tune.grid_search([0.1, 0.2]),
+        # PPO (für aa2c auskommentieren)
+        "clip":             tune.grid_search([0.2]), # 0.1 ?
         # number of times to update the actor-critic
         "ppo_episodes":     tune.grid_search([4]),
         # number of steps to collect for each trajectory
-        "batch_size":       tune.grid_search([5000]),
-        "mini_batch_size":  tune.grid_search([0, 128, 1000]),
+        "mini_batch_size":  tune.grid_search([0, 100, 1000]),
         
         # config for mlflow logging
         "mlflow": {

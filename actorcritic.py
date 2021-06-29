@@ -18,7 +18,20 @@ class ActorCritic(Agent):
     
     @abstractmethod
     def learn(self):
-        raise NotImplementedError
+        raise NotImplementedError        
+
+    def apply(self, states, actions, log_probs, A_k, rewards, discounted_return):
+        # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
+        V, current_log_probs, entropy = self.model.evaluate(states, actions)
+        
+        # Calculate actor and critic loss
+        actor_loss  = self.get_actor_loss(current_log_probs, log_probs, A_k, entropy)
+        critic_loss = self.get_critic_loss(V, rewards, discounted_return) 
+
+        # Calculate gradients and perform backward propagation
+        self.model.optimize(actor_loss, critic_loss)
+
+        return actor_loss.item(), critic_loss.item(), entropy
 
     def get_advantage(self, states, next_states, actions, dones, discounted_return):
         # Evaluate state and actions
