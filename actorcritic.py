@@ -30,7 +30,7 @@ class ActorCritic(Agent):
         if self.args.advantage == "reinforce":
             A_k = discounted_return
         elif self.args.advantage == "temporal":
-            has_next = torch.logical_xor(dones, torch.ones_like(dones)) 
+            has_next = torch.logical_xor(dones, torch.ones_like(dones, device=self.args.device)) 
             V_next, _, _ = self.model.evaluate(next_states, actions)
             A_k = discounted_return + V_next.detach() * self.args.gamma * has_next - V.detach()
         else:

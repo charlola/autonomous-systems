@@ -78,14 +78,14 @@ class Agent(ABC):
         
         # calculate discounted return
         discounted_return = self.compute_discounted_rewards(rewards, dones)
-
+        
         # Reshape data as tensors
-        states      = torch.tensor(states,      dtype=torch.float)
-        next_states = torch.tensor(next_states, dtype=torch.float)
-        actions     = torch.tensor(actions,     dtype=torch.float)
-        log_probs   = torch.tensor(log_probs,   dtype=torch.float)
-        rewards     = torch.tensor(rewards,     dtype=torch.float)
-        dones       = torch.tensor(dones,       dtype=torch.float)
+        states      = torch.tensor(states,      dtype=torch.float, device=self.args.device)
+        next_states = torch.tensor(next_states, dtype=torch.float, device=self.args.device)
+        actions     = torch.tensor(actions,     dtype=torch.float, device=self.args.device)
+        log_probs   = torch.tensor(log_probs,   dtype=torch.float, device=self.args.device)
+        rewards     = torch.tensor(rewards,     dtype=torch.float, device=self.args.device)
+        dones       = torch.tensor(dones,       dtype=torch.float, device=self.args.device)
 
         # Return batch data
         return states, next_states, actions, log_probs, rewards, dones, sum_rewards, discounted_return
@@ -99,7 +99,7 @@ class Agent(ABC):
             discounted_reward = reward + (self.args.gamma * discounted_reward)
             discounted_rewards.insert(0, discounted_reward)
 
-        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float)
+        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float, device=self.args.device)
 
         # Normalizing the rewards:
         if self.args.normalize == "reward":

@@ -17,7 +17,7 @@ class BaseNet(nn.Module):
         self.eval()
 
 class Net(BaseNet):
-    def __init__(self, in_dim, hidden_units, out_dim, activation):
+    def __init__(self, device, in_dim, hidden_units, out_dim, activation):
         BaseNet.__init__(self)
 
         # get activation function
@@ -34,10 +34,10 @@ class Net(BaseNet):
                 layers.append(activation())
             layers.append(nn.Linear(input_dim, output_dim))
         
-        self.net = nn.Sequential(*layers)
+        self.net = nn.Sequential(*layers).to(device)
         
 class ActorNet(BaseNet):
-    def __init__(self, in_dim, hidden_units, out_dim, activation):
+    def __init__(self, device, in_dim, hidden_units, out_dim, activation):
         BaseNet.__init__(self)
 
         # get activation function
@@ -52,11 +52,11 @@ class ActorNet(BaseNet):
             layers.append(nn.Linear(input_dim, output_dim))
             layers.append(activation())
         
-        self.net = nn.Sequential(*layers)
+        self.net = nn.Sequential(*layers).to(device)
 
-        self.mean = nn.Linear(units[-1], out_dim)
+        self.mean = nn.Linear(units[-1], out_dim).to(device)
         self.mean.weight.data.fill_(1e-5)
         self.mean.bias.data.fill_(1e-5)
-        self.std = nn.Linear(units[-1], out_dim)
+        self.std = nn.Linear(units[-1], out_dim).to(device)
         self.std.weight.data.fill_(1e-5)
         self.std.bias.data.fill_(1e-5)

@@ -110,18 +110,18 @@ class Model(BaseModel):
         BaseModel.__init__(self, args)
         
         # Initialize actor and critic networks
-        self.actor  = Net(args.state_dim, args.hidden_units, args.act_dim, args.activation)
-        self.critic = Net(args.state_dim, args.hidden_units, 1, args.activation)
+        self.actor  = Net(args.device, args.state_dim, args.hidden_units, args.act_dim, args.activation)
+        self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation)
 
         # Initialize optimizer
-        self.actor_optimizer  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr)
+        self.actor_optimizer  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr,  device=self.args.device)
+        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr, device=self.args.device)
 
         # Create our variable for the matrix
         # Chose 0.5 for standarddeviation
         # Create covariance matrix
-        self.cov_var = torch.full(size=(args.act_dim,), fill_value=0.5)
-        self.cov_mat = torch.diag(self.cov_var)
+        self.cov_var = torch.full(size=(args.act_dim,), fill_value=0.5, device=self.args.device)
+        self.cov_mat = torch.diag(self.cov_var, device=self.args.device)
         
         self.check()
 
@@ -144,8 +144,8 @@ class AdvancedModel(BaseModel):
         BaseModel.__init__(self, args)
 
         # Initialize actor and critic networks
-        self.actor  = ActorNet(args.state_dim, args.hidden_units, args.act_dim, args.activation)
-        self.critic = Net(args.state_dim, args.hidden_units, 1, args.activation)
+        self.actor  = ActorNet(args.device, args.state_dim, args.hidden_units, args.act_dim, args.activation)
+        self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation)
 
         # Initialize optimizer
         self.actor_optimizer  = torch.optim.Adam(list(self.actor.net.parameters()) + list(self.actor.mean.parameters()) + list(self.actor.std.parameters()), lr=args.actor_lr)
