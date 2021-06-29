@@ -6,7 +6,7 @@ import os
 
 
 def load_env(name, no_graphics=False):
-    file_name = os.path.abspath("environments/" + name + "/UnityEnvironment")
+    file_name = os.path.abspath(os.path.join(__file__, os.pardir, "environments", name, "UnityEnvironment"))
 
     if no_graphics:
 
