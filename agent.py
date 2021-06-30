@@ -4,11 +4,10 @@ import torch
 import numpy as np
 
 class Agent(ABC):
-    def __init__(self, args, model):
+    def __init__(self, args):
         self.args = args 
 
         self.mse = torch.nn.MSELoss()
-        self.model = model
     
     def get_action(self, state):
         #return action, log_prob
@@ -49,7 +48,8 @@ class Agent(ABC):
                 # Increment timesteps for this batch
                 t += 1
                 ep_t += 1
-
+                self.args.episode += 1
+                
                 # Get action 
                 action, log_prob = self.model.get_action(state)
                 
@@ -78,7 +78,7 @@ class Agent(ABC):
         
         # calculate discounted return
         discounted_return = self.compute_discounted_rewards(rewards, dones)
-        
+
         # Reshape data as tensors
         states      = torch.tensor(states,      dtype=torch.float, device=self.args.device)
         next_states = torch.tensor(next_states, dtype=torch.float, device=self.args.device)
@@ -96,7 +96,7 @@ class Agent(ABC):
         for reward, done in zip(reversed(rewards), reversed(dones)):
             if done:
                 discounted_reward = 0
-            discounted_reward = reward + (self.args.gamma * discounted_reward)
+            discounted_reward = reward + self.args.gamma * discounted_reward
             discounted_rewards.insert(0, discounted_reward)
 
         discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float, device=self.args.device)

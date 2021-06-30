@@ -42,11 +42,15 @@ class BaseModel(ABC):
         # Calculate gradients and perform backward propagation for actor network
         self.actor_optimizer.zero_grad()
         actor_loss.backward()
+        if self.args.max_grad_norm > 0:
+            torch.nn.utils.clip_grad_norm_(self.actor.get_parameters(), self.args.max_grad_norm)
         self.actor_optimizer.step()
 
         # Calculate gradients and perform backward propagation for critic network
         self.critic_optimizer.zero_grad()
         critic_loss.backward()
+        if self.args.max_grad_norm > 0:
+            torch.nn.utils.clip_grad_norm_(self.critic.get_parameters(), self.args.max_grad_norm)
         self.critic_optimizer.step()
     
     @abstractmethod
@@ -114,8 +118,8 @@ class Model(BaseModel):
         self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation)
 
         # Initialize optimizer
-        self.actor_optimizer  = torch.optim.Adam(self.actor.parameters(),  lr=args.actor_lr)
-        self.critic_optimizer = torch.optim.Adam(self.critic.parameters(), lr=args.critic_lr)
+        self.actor_optimizer  = torch.optim.Adam(self.actor.get_parameters(),  lr=args.actor_lr)
+        self.critic_optimizer = torch.optim.Adam(self.critic.get_parameters(), lr=args.critic_lr)
 
         # Create our variable for the matrix
         # Chose 0.5 for standarddeviation
@@ -148,8 +152,8 @@ class AdvancedModel(BaseModel):
         self.critic = Net(args.device, args.state_dim, args.hidden_units, 1, args.activation).to(device=args.device)
 
         # Initialize optimizer
-        self.actor_optimizer  = torch.optim.Adam(list(self.actor.net.parameters()) + list(self.actor.mean.parameters()) + list(self.actor.std.parameters()), lr=args.actor_lr)
-        self.critic_optimizer = torch.optim.Adam(self.critic.net.parameters(), lr=args.critic_lr)
+        self.actor_optimizer  = torch.optim.Adam(self.actor.get_parameters(),  lr=args.actor_lr)
+        self.critic_optimizer = torch.optim.Adam(self.critic.get_parameters(), lr=args.critic_lr)
         
         self.check()
 

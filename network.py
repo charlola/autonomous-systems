@@ -35,6 +35,9 @@ class Net(BaseNet):
             layers.append(nn.Linear(input_dim, output_dim))
         
         self.net = nn.Sequential(*layers).to(device)
+
+    def get_parameters(self):
+        return self.net.parameters()
         
 class ActorNet(BaseNet):
     def __init__(self, device, in_dim, hidden_units, out_dim, activation):
@@ -60,3 +63,6 @@ class ActorNet(BaseNet):
         self.std = nn.Linear(units[-1], out_dim).to(device)
         self.std.weight.data.fill_(1e-5)
         self.std.bias.data.fill_(1e-5)
+
+    def get_parameters(self):
+        return list(self.net.parameters()) + list(self.mean.parameters()) + list(self.std.parameters())

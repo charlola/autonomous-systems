@@ -143,23 +143,23 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
 
 def get_hyperparameter():
     return {
-        "algorithm": tune.grid_search(["appo"]),  # Olli|Patrick|Dominik|Lotte (appo) Alex|Georg (aa2c)
-        "gamma": tune.grid_search([0.99]),
+        "algorithm":    tune.grid_search(["appo"]),  # Olli|Patrick|Dominik|Lotte (appo) Alex|Georg (aa2c)
+        "gamma":        tune.grid_search([0.99]),
         "hidden_units": tune.grid_search([[64, 64]]),  # [64, 128] ?
-        "activation": tune.grid_search(["Tanh"]),  # ReLU ?
+        "activation":   tune.grid_search(["Tanh"]),  # ReLU ?
         # define config/hyperparams for actor critic
 
         # learning rate
-        "actor_lr": tune.grid_search([1e-5]),  # Dominik|Georg (1e-4) Patrick|Alex (1e-4) Oli (1e-5) Lotte (1e-5)
-        "critic_lr": tune.grid_search([1e-5]),  # Dominik|Georg (1e-4) Patrick|Alex (1e-5) Oli (1e-5) Lotte (1e-6)
-        "noise": tune.grid_search([0, 0.001]),
+        "actor_lr":     tune.grid_search([1e-4]),  # Dominik|Georg (1e-4) Patrick|Alex (1e-4) Oli (1e-5) Lotte (1e-5)
+        "critic_lr":    tune.grid_search([1e-4]),  # Dominik|Georg (1e-4) Patrick|Alex (1e-5) Oli (1e-5) Lotte (1e-6)
+        "noise":        tune.grid_search([0]), # , 0.001
 
-        "advantage":        tune.grid_search(["advantage"]), # temporal ?
-        "normalize":        tune.grid_search(["advantage", "reward", "none"]),
-        "batch_size":       tune.grid_search([5000]),
+        "advantage":    tune.grid_search(["advantage"]), # temporal ?
+        "normalize":    tune.grid_search(["reward", "advantage"]), # advantage, none
+        "batch_size":   tune.grid_search([5000]),
 
         # PPO (für aa2c auskommentieren)
-        "clip": tune.grid_search([0.2]),  # 0.1 ?
+        "clip":         tune.grid_search([0.2]),  # 0.1 ?
         # number of times to update the actor-critic
         "ppo_episodes": tune.grid_search([4]),
         # number of steps to collect for each trajectory
@@ -198,6 +198,7 @@ def trainable(hyperparameter):
     args.action_high = env.action_space.high[0]
     if hasattr(env, "_max_episode_steps"):
         args.max_step = env._max_episode_steps
+    args.episode = 0
 
     # create agent
     if args.algorithm in ["ppo", "appo"]:
@@ -248,10 +249,16 @@ if __name__ == "__main__":
     args = commandline.collect_arguments()
 
     if args.tuning:
-        analysis = tune.run(
+        if torch.cuda.is_available():
+            analysis = tune.run(
+                trainable,
+                config=get_hyperparameter(),
+                resources_per_trial={'gpu': 1}
+            )
+        else:
+            analysis = tune.run(
             trainable,
             config=get_hyperparameter(),
-            resources_per_trial={'gpu': 1}
         )
 
     else:
