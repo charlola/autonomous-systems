@@ -14,7 +14,7 @@ class Agent(ABC):
         raise NotImplementedError
 
     def policy(self, state):
-        return self.get_action(state)[0]
+        return self.model.get_action(state)[0]
     
     def update(self, state, action, reward, next_state, done):
         pass
