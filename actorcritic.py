@@ -39,22 +39,19 @@ class ActorCritic(Agent):
 
         # Calculate Advantage ( reinforce | temporal | advantage )
         if self.args.advantage == "reinforce":
-            A_k = discounted_return
+            A = discounted_return
         elif self.args.advantage == "temporal":
             V_next, _, _ = self.model.evaluate(next_states, actions)
-            A_k = discounted_return + V_next.detach() * self.args.gamma * has_next - V.detach()
+            A = discounted_return + V_next.detach() * self.args.gamma * has_next - V.detach()
         else:
-            A_k = discounted_return - V.detach()
+            A = discounted_return - V.detach()
 
         if self.args.gae_lambda > 0:
-            next_advantage = 0
-            for i in reversed(range(len(A_k))):
-                A_k[i] = A_k[i] + self.args.gamma * self.args.gae_lambda * next_advantage * has_next[i]
-                next_advantage = A_k[i] 
+            A = self.discount(A, self.args.gamma * self.args.gae_lambda)
 
         if self.args.normalize == "advantage":
             # Normalize Advantages (Trick: makes PPO more stable)
             # Subtracting 1e-10, so there will be no possibility of dividing by 0
-            A_k = (A_k - A_k.mean()) / (A_k.std() + 1e-10)
+            A = (A - A.mean()) / (A.std() + 1e-10)
 
-        return A_k
+        return A

@@ -17,13 +17,13 @@ class PPO(ActorCritic):
         self.batch_indices = np.arange(self.args.batch_size)
 
 
-    def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
+    def get_actor_loss(self, current_log_probs, log_probs, A, entropy):
         # Calculate ratios
         ratios = torch.exp(current_log_probs - log_probs)
 
         # Calculate surrogate losses
-        surr1 = ratios * A_k
-        surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A_k
+        surr1 = ratios * A
+        surr2 = torch.clamp(ratios, 1-self.args.clip, 1+self.args.clip) * A
 
         # Calculate actor and critic loss
         actor_loss = -torch.min(surr1, surr2).mean() - self.get_noise(entropy)
@@ -36,7 +36,7 @@ class PPO(ActorCritic):
     def learn(self, states, next_states, actions, log_probs, rewards, dones, discounted_return):
 
         # Calculate Advantage
-        A_k = self.get_advantage(states, next_states, actions, dones, discounted_return)
+        A = self.get_advantage(states, next_states, actions, dones, discounted_return)
         
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
@@ -56,7 +56,7 @@ class PPO(ActorCritic):
                 V, current_log_probs, entropy = self.model.evaluate(states[indices], actions[indices])
                 
                 # Calculate actor and critic loss
-                actor_loss  = self.get_actor_loss(current_log_probs, log_probs[indices], A_k[indices], entropy)
+                actor_loss  = self.get_actor_loss(current_log_probs, log_probs[indices], A[indices], entropy)
                 critic_loss = self.get_critic_loss(V, rewards[indices], discounted_return[indices]) 
 
                 # Calculate gradients and perform backward propagation

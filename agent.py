@@ -77,7 +77,11 @@ class Agent(ABC):
                     dones.append(False)
         
         # calculate discounted return
-        discounted_return = self.compute_discounted_rewards(rewards, dones)
+        discounted_return = self.discount(rewards, dones, self.args.gamma)
+
+        # Normalizing the rewards:
+        if self.args.normalize == "reward":
+            discounted_return = (discounted_return - discounted_return.mean()) / (discounted_return.std() + 1e-5)
 
         # Reshape data as tensors
         states      = torch.tensor(states,      dtype=torch.float, device=self.args.device)
@@ -90,19 +94,12 @@ class Agent(ABC):
         # Return batch data
         return states, next_states, actions, log_probs, rewards, dones, sum_rewards, discounted_return
 
-    def compute_discounted_rewards(self, rewards, dones):
-        discounted_rewards = []
-        discounted_reward = 0
-        for reward, done in zip(reversed(rewards), reversed(dones)):
-            if done:
-                discounted_reward = 0
-            discounted_reward = reward + self.args.gamma * discounted_reward
-            discounted_rewards.insert(0, discounted_reward)
-
-        discounted_rewards = torch.tensor(discounted_rewards, dtype=torch.float, device=self.args.device)
-
-        # Normalizing the rewards:
-        if self.args.normalize == "reward":
-            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / (discounted_rewards.std() + 1e-5)
-        
-        return discounted_rewards
+    def discount(self, data, dones, discount):
+        running = 0
+        discounted = torch.zeros_like(data, dtype=torch.float, device=self.args.device)
+        for i in reversed(len(data)):
+            if dones[i]:
+                running = 0
+            running = data[i] + discount * running
+            discounted[i] = running
+        return discounted
