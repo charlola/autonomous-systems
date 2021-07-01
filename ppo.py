@@ -37,13 +37,18 @@ class PPO(ActorCritic):
         
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
+
+            all_indices = np.arange(self.args.batch_size)
+            np.random.shuffle(all_indices)
         
             # default at batch_size 32 per iteration
             iterations = int(self.args.batch_size / self.args.mini_batch_size)
             for minibatch in range(iterations):
-
-                # create indices
-                indices = np.arange(minibatch * self.args.mini_batch_size, (minibatch + 1) * self.args.mini_batch_size)
+                
+                # pick indices
+                i_start = minibatch       * self.args.mini_batch_size
+                i_stop  = (minibatch + 1) * self.args.mini_batch_size
+                indices = all_indices[i_start: i_stop]
 
                 # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
                 V, current_log_probs, entropy = self.model.evaluate(states[indices], actions[indices])
