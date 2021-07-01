@@ -41,8 +41,9 @@ class PPO(ActorCritic):
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
 
-            # Shuffle batch indices
-            np.random.shuffle(self.batch_indices)
+            if self.args.shuffle_mini_batch:
+                # Shuffle batch indices
+                np.random.shuffle(self.batch_indices)
 
             # Iterate over minibatches
             for minibatch in range(self.minibatches):

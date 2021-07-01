@@ -36,6 +36,7 @@ def collect_arguments():
     parser.add_argument("--ppo_episodes",       default=5,              type=int,       help="n_updates_per_iteration")
     parser.add_argument("--batch_size",         default=5000,           type=int,       help="timesteps_per_batch")
     parser.add_argument("--mini_batch_size",    default=32,             type=int,       help="mini batches each ppo episode")
+    parser.add_argument("--shuffle_mini_batch", default=True,           type=str2bool,  help="shuffle mini batch")
     parser.add_argument("--max_step",           default=1000,           type=int,       help="max_timesteps_per_episode")
     parser.add_argument("--noise",              default=0,              type=float,     help="Noise Factor") # 0.001
     parser.add_argument("--noise_decay",        default="linear",       type=str,       help="Noise Decay Type (linear | geometric)")
