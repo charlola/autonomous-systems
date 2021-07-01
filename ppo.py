@@ -14,6 +14,7 @@ class PPO(ActorCritic):
             args.mini_batch_size = args.batch_size
 
         self.minibatches = int(self.args.batch_size / self.args.mini_batch_size)
+        self.batch_indices = np.arange(self.args.batch_size)
 
 
     def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
@@ -40,9 +41,8 @@ class PPO(ActorCritic):
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
 
-            # Create shuffled array of indces
-            all_indices = np.arange(self.args.batch_size)
-            np.random.shuffle(all_indices)
+            # Shuffle batch indices
+            np.random.shuffle(self.batch_indices)
 
             # Iterate over minibatches
             for minibatch in range(self.minibatches):
@@ -50,7 +50,7 @@ class PPO(ActorCritic):
                 # Pick indices for minibatch
                 i_start = minibatch       * self.args.mini_batch_size
                 i_stop  = (minibatch + 1) * self.args.mini_batch_size
-                indices = all_indices[i_start: i_stop]
+                indices = self.batch_indices[i_start: i_stop]
 
                 # Evaluate state and actions to calculate V_phi and pi_theta(a_t | s_t)
                 V, current_log_probs, entropy = self.model.evaluate(states[indices], actions[indices])
