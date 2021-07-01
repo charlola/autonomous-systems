@@ -13,6 +13,8 @@ class PPO(ActorCritic):
         if args.mini_batch_size <= 0 or args.mini_batch_size > args.batch_size:
             args.mini_batch_size = args.batch_size
 
+        self.minibatches = int(self.args.batch_size / self.args.mini_batch_size)
+
 
     def get_actor_loss(self, current_log_probs, log_probs, A_k, entropy):
         # Calculate ratios
@@ -38,14 +40,14 @@ class PPO(ActorCritic):
         # default at 5 updates per iteration
         for _ in range(self.args.ppo_episodes):
 
+            # Create shuffled array of indces
             all_indices = np.arange(self.args.batch_size)
             np.random.shuffle(all_indices)
-        
-            # default at batch_size 32 per iteration
-            iterations = int(self.args.batch_size / self.args.mini_batch_size)
-            for minibatch in range(iterations):
+
+            # Iterate over minibatches
+            for minibatch in range(self.minibatches):
                 
-                # pick indices
+                # Pick indices for minibatch
                 i_start = minibatch       * self.args.mini_batch_size
                 i_stop  = (minibatch + 1) * self.args.mini_batch_size
                 indices = all_indices[i_start: i_stop]
