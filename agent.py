@@ -96,8 +96,8 @@ class Agent(ABC):
 
     def discount(self, data, dones, discount):
         running = 0
-        discounted = torch.zeros_like(data, dtype=torch.float, device=self.args.device)
-        for i in reversed(len(data)):
+        discounted = torch.zeros(len(data), dtype=torch.float, device=self.args.device)
+        for i in reversed(range(len(data))):
             if dones[i]:
                 running = 0
             running = data[i] + discount * running
