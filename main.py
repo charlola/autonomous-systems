@@ -82,6 +82,9 @@ def loop(folder, agent, episodes, logger):
                 checkpoint = int(batch / args.checkpoints)
                 agent.model.save(os.path.join(folder, "checkpoint_%02d" % checkpoint), logger)
 
+                # add temporary plot
+                plot(folder, logger)
+
             if args.interrupt and batch > 10 and all(std < 20 for std in logger["Avg Std"][-10:]):
                 break
 
