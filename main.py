@@ -143,6 +143,8 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
     if args.graphics:
         plt.show()
 
+    plt.close(fig)
+
 
 def get_hyperparameter():
     return {
