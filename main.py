@@ -71,7 +71,7 @@ def loop(folder, agent, episodes, logger):
             logger["Std"].append(std_rewads)
             logger["Actor Loss"].append(actor_loss)
             logger["Critic Loss"].append(critic_loss)
-            logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 10):]))
+            logger["Avg Std"].append(np.std(logger["Average Reward"][-min(len(logger["Average Reward"]), 15):]))
             logger["Entropy"].append(entropy)
 
             if best is None or avg_rewards > best:
@@ -98,16 +98,20 @@ def loop(folder, agent, episodes, logger):
 
 def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.9):
     # calculate number of culumns
-    rows = int((columns - 1 + len(logger)) / columns)
+    rows = int((columns - 1 - 2 + len(logger)) / columns)
 
     # create subplots
     fig, axs = plt.subplots(rows, columns, figsize=(14, 10), constrained_layout=True)
 
+    plot_id = 0
+
     # create plot for every entry in the logger
-    for i, (name, values) in enumerate(logger.items()):
+    for name, values in logger.items():
+        if name in ["Std", "Avg Std"]: continue
+
         # calculate the position of the subplot
-        xi = i % columns
-        yi = int(i / columns)
+        xi = plot_id % columns
+        yi = int(plot_id / columns)
 
         # define x range 
         x = list(range(len(values) - start_avg + 1))
@@ -124,14 +128,12 @@ def plot(folder, logger, columns=2, use_average=False, start_avg=1, smoothing=0.
         # plot values with name as title
         axs[yi, xi].grid()
         axs[yi, xi].plot(x, y)
-        if i == 0:
-            std = np.array([np.std(y[-min(i, 300):]) for i in range(len(y))])
-            axs[yi, xi].fill_between(x, y - std, y + std, alpha=0.5)
-        elif i == 1:
+        if plot_id == 1:
             std = np.array(logger["Avg Std"])
             axs[yi, xi].fill_between(x, y - std, y + std, alpha=0.5)
 
         axs[yi, xi].set_title(name)
+        plot_id += 1
     # Adding headline with hyperparams to plot
     fig.suptitle('Env: {environment}, Algorithm: {algorithm}\n Gamma: {gamma}, Critic_Lr: {crit_lr}, '
                  'Actor_Lr: {act_lr},\n Activation_func: {activation_function}, Clip: {clip}'.format(
