@@ -227,7 +227,7 @@ def trainable(hyperparameter):
 
     if args.mode == "train":
         # create new folder for current training 
-        run_id = max(list(map(int, [re.findall(r'\d+', matching_path)[0] for matching_path in os.listdir(main_folder)])))+1
+        run_id = max([0] + list(map(int, [re.findall(r'\d+', matching_path)[0] for matching_path in os.listdir(main_folder)])))+1
         folder = os.path.join(main_folder, "run_%03d" % run_id)
         os.makedirs(folder, exist_ok=True)
 
