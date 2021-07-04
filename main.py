@@ -218,6 +218,7 @@ def trainable(hyperparameter):
 
     # define target folder
     main_folder = os.path.abspath(os.path.join(__file__, os.pardir, "target", args.env_name, args.algorithm))
+    os.makedirs(main_folder, exist_ok=True)
 
     if args.load is not None:
         agent.model.load(os.path.join(main_folder, args.load), logger)
