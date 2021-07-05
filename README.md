@@ -4,42 +4,42 @@
 1. Anaconda runterladen:
 1. Virtuelle Umgebung mit Python 3.6 anlegen (using Anaconda Prompt)  :
 
-> conda create -n ml-agents python=3.6
+   > conda create -n ml-agents python=3.6
 
-    (Windows): conda activate ml-agents  
-    (Mac/Unix): source activate ml-agents
+        (Windows): conda activate ml-agents  
+        (Mac/Unix): source activate ml-agents
 
 1. Virtuelle Umgebung starten
 activate ml-agents
 
 1. In ein Ordner für Repositories wechseln und ml-agents downloaden: (dauert länger)
 
-> git clone --branch release_2 https://github.com/Unity-Technologies/ml-agents.git
+   > git clone --branch release_2 https://github.com/Unity-Technologies/ml-agents.git
 
 1. In das ml-agents Repository wechseln
 > cd ml-agents
 
 1. Das ml-agents envs Package installieren (muss vor ml-agents installiert werden)
 
->cd ml-agents-envs
+   > cd ml-agents-envs
 
 >pip install -e .
 
 1. Das ml-agents Package installieren (dauert länger)
 
-> cd ../ml-agents
+   > cd ../ml-agents
 
-> pip install -e .
+   > pip install -e .
 
 1. Die Verbindung zwischen Gym und Unity 
 
-> cd ../gym-unity
+   > cd ../gym-unity
 
-> pip install -e .
+   > pip install -e .
 
 1. Pytorch installieren (dauert länger)
 
-> conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+   > conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
 # Einige Aufrufe
 
