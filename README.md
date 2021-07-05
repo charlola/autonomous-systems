@@ -6,24 +6,26 @@
 
    > conda create -n ml-agents python=3.6
 
+1. Virtuelle Umgebung starten
+
+   > activate ml-agents
+ 
         (Windows): conda activate ml-agents  
         (Mac/Unix): source activate ml-agents
-
-1. Virtuelle Umgebung starten
-activate ml-agents
 
 1. In ein Ordner für Repositories wechseln und ml-agents downloaden: (dauert länger)
 
    > git clone --branch release_2 https://github.com/Unity-Technologies/ml-agents.git
 
 1. In das ml-agents Repository wechseln
-> cd ml-agents
+   
+   > cd ml-agents
 
 1. Das ml-agents envs Package installieren (muss vor ml-agents installiert werden)
 
    > cd ml-agents-envs
 
->pip install -e .
+   > pip install -e .
 
 1. Das ml-agents Package installieren (dauert länger)
 
