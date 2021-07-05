@@ -3,7 +3,6 @@
 *\ML-Agents\Timers
 env_single/UnityEnvironment_Data/*
 
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -145,3 +144,5 @@ cython_debug/
 image.png
 environments/*/UnityEnvironment_Data/ML-Agents/Timers
 .gitignore
+=======
+__pycache__
