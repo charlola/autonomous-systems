@@ -54,7 +54,7 @@ activate ml-agents
 Alle Parameter mit den Default-Werten und Erklärung findet man in commandline.py 
 
 Die verschiedenen Algorithmen können Beispielweise mit dem 'algorithmus' Parameter definiert werden. 
-Hier ist zu beachten, dass 'appo' und 'aa2c' die entscheidenen Algorithmen sind, da sie Netze verwenden, die nicht nur den Mittelwert lernen, sondern auch die entsprechende Distribution der Aktionen. 'a2c' und 'ppo' verwenden primitivere Netze, die jedoch für einfache Environments auch ausreichen. 
+Hier ist zu beachten, dass 'appo' und 'aa2c' die finalen Algorithmen sind, da sie Netze verwenden, die nicht nur den Mittelwert lernen, sondern auch die entsprechende Distribution der Aktionen. 'a2c' und 'ppo' verwenden primitivere Netze, die jedoch für einfache Environments auch ausreichen. 
 ```--algorithm <apo|a2c|appo|aa2c>```
 
 > python main.py --algorithm appo --critic_lr 3e-4 --actor_lr 1e-4 --gamma 0.995 --normalize reward  --clip 0.2 --batch_size 5000 --mini_batch_size 5000 --ppo_episodes 3 --gae_lambda 0 --hidden_units "128 128" --advantage advantage
@@ -71,7 +71,7 @@ Ein alter Durchlauf kann durch den load Parameter wieder geladen werden
 Ein alter Durchlauf muss durch den load Parameter geladen werden 
 ```--load run_<run_id>/<version>```
 
-Außerdem muss der Modus auf test gestellt werden (bzw. irgendetwas gestellt werden, das nicht 'train' is)
+Außerdem muss der Modus auf test gestellt werden (bzw. irgendetwas gestellt werden, das nicht 'train' ist)
 ```--mode test```
 
 > python main.py --algorithm appo --critic_lr 3e-4 --actor_lr 1e-4 --gamma 0.995 --normalize reward  --clip 0.2 --batch_size 5000 --mini_batch_size 5000 --ppo_episodes 3 --gae_lambda 0 --hidden_units "128 128" --advantage advantage --load run_074/final --mode test
