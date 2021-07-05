@@ -1,0 +1,4 @@
+main.py -e 50000 -i False -a ppo  --env_name dynamic_worm --load run_004/final
+main.py -e 10000 -i False -a appo --env_name LunarLanderContinuous-v2 --activation Tanh --hidden_units "64 64" --actor_lr 0.001
+
+main.py -e 50000 -i False --critic_lr 0.005 --actor_lr 0.005 --algorithm appo --gamma 0.99 --env_name dynamic_worm --activation Tanh --batch_size 4800 --max_step 1600 --clip 0.2 --load run_006/final
